@@ -16,7 +16,10 @@
     "download": "ts-node src/scripts/download-and-analyze.ts",
     "download:prod": "pnpm build && node dist/scripts/download-and-analyze.js",
     "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" --fix"
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [
     "alb",
@@ -32,8 +35,10 @@
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
+    "@vitest/ui": "^4.0.5",
     "eslint": "^9.38.0",
     "ts-node": "^10.9.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.5"
   }
 }
