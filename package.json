@@ -1,0 +1,32 @@
+{
+  "name": "alb-log-analyzer",
+  "version": "1.0.0",
+  "description": "AWS Application Load Balancer (ALB) Log Analyzer",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "bin": {
+    "alb-log-analyzer": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "dev": "ts-node src/main.ts",
+    "watch": "tsc --watch",
+    "download": "ts-node src/scripts/download-and-analyze.ts",
+    "download:prod": "pnpm build && node dist/scripts/download-and-analyze.js"
+  },
+  "keywords": [
+    "alb",
+    "log",
+    "analyzer",
+    "aws",
+    "load-balancer"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}

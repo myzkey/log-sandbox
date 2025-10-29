@@ -1,0 +1,7 @@
+{
+  "awsProfile": "your-aws-profile",
+  "s3Bucket": "your-s3-bucket-name",
+  "s3Prefix": "your-s3-prefix",
+  "awsAccountId": "123456789012",
+  "region": "ap-northeast-1"
+}
