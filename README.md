@@ -1,5 +1,8 @@
 # ALB Log Analyzer
 
+[![CI](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/ci.yml)
+[![Coverage](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/coverage.yml/badge.svg)](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/coverage.yml)
+
 AWS Application Load Balancer (ALB) のアクセスログを解析するツールです。
 
 ## 機能
@@ -132,7 +135,62 @@ Slowest Requests (top 5):
 
 ## 必要な環境
 
-- Node.js 12.0 以上
+- Node.js 20.0 以上
+- pnpm 10.0 以上
+
+## 開発
+
+### セットアップ
+
+```bash
+# 依存関係のインストール
+pnpm install
+
+# ビルド
+pnpm build
+
+# 開発モード
+pnpm dev
+```
+
+### テスト
+
+```bash
+# テスト実行
+pnpm test
+
+# テスト実行（UIモード）
+pnpm test:ui
+
+# カバレッジ付きテスト
+pnpm test:coverage
+```
+
+### リント
+
+```bash
+# ESLintチェック
+pnpm lint
+
+# ESLint自動修正
+pnpm lint:fix
+```
+
+### プロジェクト構成
+
+このプロジェクトはクリーンアーキテクチャに基づいて構成されています：
+
+```
+src/
+├── domain/           # ドメイン層（エンティティ）
+├── application/      # アプリケーション層（ユースケース）
+├── infrastructure/   # インフラ層（外部システム連携）
+│   ├── config/      # 設定管理
+│   ├── filesystem/  # ファイルシステム操作
+│   └── s3/          # S3操作
+├── presentation/     # プレゼンテーション層（出力フォーマット）
+└── scripts/         # ユーティリティスクリプト
+```
 
 ## ライセンス
 

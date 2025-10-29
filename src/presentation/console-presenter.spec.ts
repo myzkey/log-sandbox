@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Presentation Layer: Console Presenter Tests
  */
@@ -99,7 +100,7 @@ describe('ConsolePresenter', () => {
       expect(output).toContain('ALBログ分析サマリー');
     });
 
-    it('slowThresholdオプションを適用すること', () => {
+    it('slowRequestThresholdオプションを適用すること', () => {
       const entry = new ALBLogEntry('h2 2025-10-28T01:41:11.673240Z app/my-alb/abc123 203.0.113.10:40742 10.0.1.100:3000 0.000 2.000 0.000 200 200 58 231 "GET https://api.example.com:443/test HTTP/2.0" "Mozilla/5.0" - - - - - - - - - - - - - -');
 
       const result = new AnalysisResult(
@@ -122,15 +123,15 @@ describe('ConsolePresenter', () => {
         []
       );
 
-      presenter.present(result, { slowThreshold: 1.5 });
+      presenter.present(result, { slowRequestThreshold: 1.5 });
 
       const output = consoleLogSpy.mock.calls.map((call: any[]) => call[0]).join('\n');
       expect(output).toContain('遅いリクエスト');
-      // デフォルトが1秒なので、slowThreshold:1.5でもフィルタリングされ1件表示される
+      // デフォルトが1秒なので、slowRequestThreshold:1.5でもフィルタリングされ1件表示される
       expect(output).toContain('GET /test');
     });
 
-    it('slowLimitオプションを適用すること', () => {
+    it('slowRequestLimitオプションを適用すること', () => {
       const entries: ALBLogEntry[] = [];
       for (let i = 0; i < 5; i++) {
         const entry = new ALBLogEntry(`h2 2025-10-28T01:41:1${i}.673240Z app/my-alb/abc123 203.0.113.10:40742 10.0.1.100:3000 0.000 2.000 0.000 200 200 58 231 "GET https://api.example.com:443/test${i} HTTP/2.0" "Mozilla/5.0" - - - - - - - - - - - - - -`);
@@ -151,7 +152,7 @@ describe('ConsolePresenter', () => {
         []
       );
 
-      presenter.present(result, { slowThreshold: 1.0, slowLimit: 3 });
+      presenter.present(result, { slowRequestThreshold: 1.0, slowRequestLimit: 3 });
 
       const output = consoleLogSpy.mock.calls.map((call: any[]) => call[0]).join('\n');
       expect(output).toContain('遅いリクエスト');
