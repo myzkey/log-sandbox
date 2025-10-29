@@ -75,7 +75,7 @@ export class ALBLogEntry {
       if (this.requestUrl !== '-') {
         const urlParts = this.requestUrl.split('/');
         if (urlParts.length > 3) {
-          this.requestPath = '/' + urlParts.slice(3).join('/');
+          this.requestPath = `/${  urlParts.slice(3).join('/')}`;
         } else {
           this.requestPath = '/';
         }

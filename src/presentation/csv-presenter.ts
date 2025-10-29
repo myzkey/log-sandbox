@@ -2,7 +2,7 @@
  * Presentation: CSV Presenter
  */
 
-import { AnalysisResult } from '@domain/analysis-result.entity';
+import type { AnalysisResult } from '@domain/analysis-result.entity';
 
 export class CsvPresenter {
   format(result: AnalysisResult): string {
@@ -21,7 +21,7 @@ export class CsvPresenter {
         entry.totalTime,
         entry.isTimeout ? 'true' : 'false'
       ];
-      csv += row.join(',') + '\n';
+      csv += `${row.join(',')  }\n`;
     }
 
     return csv;

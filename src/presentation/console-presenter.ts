@@ -2,7 +2,7 @@
  * Presentation: Console Presenter
  */
 
-import { AnalysisResult } from '@domain/analysis-result.entity';
+import type { AnalysisResult } from '@domain/analysis-result.entity';
 
 export interface PresentationOptions {
   slowRequestLimit?: number | null;
@@ -151,16 +151,16 @@ export class ConsolePresenter {
         console.log(`     - レスポンス処理: ${entry.responseProcessingTime.toFixed(3)}s`);
 
         const times = {
-          'リクエスト処理': entry.requestProcessingTime,
-          'ターゲット処理': entry.targetProcessingTime,
-          'レスポンス処理': entry.responseProcessingTime
+          リクエスト処理: entry.requestProcessingTime,
+          ターゲット処理: entry.targetProcessingTime,
+          レスポンス処理: entry.responseProcessingTime
         };
         const bottleneck = Object.entries(times).reduce((a, b) => a[1] > b[1] ? a : b);
         if (bottleneck[1] > 0.1) {
           console.log(`   ボトルネック: ${bottleneck[0]} (${bottleneck[1].toFixed(3)}s)`);
         }
       }
-      console.log('\n' + '-'.repeat(80));
+      console.log(`\n${  '-'.repeat(80)}`);
       console.log();
     }
 

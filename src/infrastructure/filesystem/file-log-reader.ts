@@ -5,7 +5,7 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
 import * as zlib from 'zlib';
-import { ILogReader } from './log-reader.interface';
+import type { ILogReader } from './log-reader.interface';
 
 export class FileLogReader implements ILogReader {
   constructor(private readonly filePath: string) {}

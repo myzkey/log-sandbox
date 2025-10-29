@@ -113,7 +113,7 @@ class DownloadAndAnalyzeScript {
       execSync(command, { stdio: 'inherit' });
 
       this.printCompletionMessage(combinedLogPath);
-    } catch (error) {
+    } catch {
       console.error('❌ エラー: ログ解析に失敗しました');
       process.exit(1);
     }
@@ -170,13 +170,13 @@ class DownloadAndAnalyzeScript {
 }
 
 // メイン処理
-async function main() {
+async function main(): Promise<void> {
   const dateArg = process.argv[2];
   const script = new DownloadAndAnalyzeScript(dateArg);
   await script.run();
 }
 
-main().catch(error => {
+main().catch((error: Error) => {
   console.error('Error:', error);
   process.exit(1);
 });

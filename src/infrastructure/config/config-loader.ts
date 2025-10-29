@@ -60,11 +60,11 @@ export class ConfigLoader {
    */
   private loadFromEnv(): AppConfig {
     return {
-      awsProfile: process.env.AWS_PROFILE!,
-      s3Bucket: process.env.S3_BUCKET!,
-      s3Prefix: process.env.S3_PREFIX!,
-      awsAccountId: process.env.AWS_ACCOUNT_ID!,
-      region: process.env.AWS_REGION || 'ap-northeast-1'
+      awsProfile: process.env.AWS_PROFILE ?? '',
+      s3Bucket: process.env.S3_BUCKET ?? '',
+      s3Prefix: process.env.S3_PREFIX ?? '',
+      awsAccountId: process.env.AWS_ACCOUNT_ID ?? '',
+      region: process.env.AWS_REGION ?? 'ap-northeast-1'
     };
   }
 
@@ -120,8 +120,8 @@ export class ConfigLoader {
   /**
    * 設定の検証
    */
-  private validateConfig(config: any): void {
-    const requiredFields = ['awsProfile', 's3Bucket', 's3Prefix', 'awsAccountId', 'region'];
+  private validateConfig(config: AppConfig): void {
+    const requiredFields: (keyof AppConfig)[] = ['awsProfile', 's3Bucket', 's3Prefix', 'awsAccountId', 'region'];
 
     for (const field of requiredFields) {
       if (!config[field]) {

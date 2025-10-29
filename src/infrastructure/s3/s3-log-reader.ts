@@ -2,7 +2,7 @@
  * Infrastructure: S3 Log Reader
  */
 
-import { ILogReader } from '@infrastructure/filesystem/log-reader.interface';
+import type { ILogReader } from '@infrastructure/filesystem/log-reader.interface';
 
 export class S3LogReader implements ILogReader {
   constructor(
