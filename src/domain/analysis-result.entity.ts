@@ -2,7 +2,7 @@
  * Domain Entity: Analysis Result
  */
 
-import { ALBLogEntry } from './alb-log-entry.entity';
+import type { ALBLogEntry } from './alb-log-entry.entity';
 
 export interface Stats {
   min: number;

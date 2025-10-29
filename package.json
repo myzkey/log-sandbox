@@ -1,6 +1,7 @@
 {
   "name": "alb-log-analyzer",
   "version": "1.0.0",
+  "type": "module",
   "description": "AWS Application Load Balancer (ALB) Log Analyzer",
   "main": "dist/main.js",
   "types": "dist/main.d.ts",
@@ -13,7 +14,9 @@
     "dev": "ts-node src/main.ts",
     "watch": "tsc --watch",
     "download": "ts-node src/scripts/download-and-analyze.ts",
-    "download:prod": "pnpm build && node dist/scripts/download-and-analyze.js"
+    "download:prod": "pnpm build && node dist/scripts/download-and-analyze.js",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix"
   },
   "keywords": [
     "alb",
@@ -25,7 +28,11 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@eslint/js": "^9.38.0",
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.38.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0"
   }

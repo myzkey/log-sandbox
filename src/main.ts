@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import { LogAnalyzerUseCase } from '@application/log-analyzer.usecase';
 import { FileLogReader } from '@infrastructure/filesystem/file-log-reader';
 import { StdinLogReader } from '@infrastructure/filesystem/stdin-log-reader';
-import { ConsolePresenter, PresentationOptions } from '@presentation/console-presenter';
+import { ConsolePresenter, type PresentationOptions } from '@presentation/console-presenter';
 import { JsonPresenter } from '@presentation/json-presenter';
 import { CsvPresenter } from '@presentation/csv-presenter';
 
@@ -71,29 +71,38 @@ async function main(): Promise<void> {
       let actualPath = output;
 
       switch (format) {
-        case 'json':
+        case 'json': {
           const jsonPresenter = new JsonPresenter();
           content = JSON.stringify(jsonPresenter.format(result), null, 2);
-          if (!actualPath.endsWith('.json')) actualPath += '.json';
+          if (!actualPath.endsWith('.json')) {
+            actualPath += '.json';
+          }
           break;
-        case 'csv':
+        }
+        case 'csv': {
           const csvPresenter = new CsvPresenter();
           content = csvPresenter.format(result);
-          if (!actualPath.endsWith('.csv')) actualPath += '.csv';
+          if (!actualPath.endsWith('.csv')) {
+            actualPath += '.csv';
+          }
           break;
+        }
         case 'txt':
-        default:
+        default: {
           // Capture console output for txt format
           const originalLog = console.log;
           let txtContent = '';
-          console.log = (...args: any[]): void => {
-            txtContent += args.join(' ') + '\n';
+          console.log = (...args: string[]): void => {
+            txtContent += `${args.join(' ')}\n`;
           };
           consolePresenter.present(result, options);
           console.log = originalLog;
           content = txtContent;
-          if (!actualPath.endsWith('.txt')) actualPath += '.txt';
+          if (!actualPath.endsWith('.txt')) {
+            actualPath += '.txt';
+          }
           break;
+        }
       }
 
       await fs.promises.writeFile(actualPath, content, 'utf8');

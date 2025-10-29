@@ -3,7 +3,7 @@
  */
 
 import * as readline from 'readline';
-import { ILogReader } from './log-reader.interface';
+import type { ILogReader } from './log-reader.interface';
 
 export class StdinLogReader implements ILogReader {
   async readLines(): Promise<string[]> {

@@ -2,10 +2,65 @@
  * Presentation: JSON Presenter
  */
 
-import { AnalysisResult } from '@domain/analysis-result.entity';
+import type { AnalysisResult } from '@domain/analysis-result.entity';
+
+interface JsonOutput {
+  summary: {
+    totalRequests: number;
+    timeouts: number;
+    errors: number;
+    slowRequests: number;
+  };
+  responseTimeStats: {
+    requestsAnalyzed: number;
+    min: number;
+    max: number;
+    mean: number;
+    median: number;
+    stdDev: number;
+  } | null;
+  statusCodes: Record<string, number>;
+  httpMethods: Record<string, number>;
+  topEndpoints: Array<{ endpoint: string; count: number; percentage: string }>;
+  topClientIPs: Array<{ ip: string; count: number; percentage: string }>;
+  timeouts: Array<{
+    timestamp: string;
+    statusCode: string;
+    method: string;
+    path: string;
+    clientIp: string;
+  }>;
+  errors: Array<{
+    timestamp: string;
+    statusCode: string;
+    method: string;
+    path: string;
+    clientIp: string;
+  }>;
+  slowRequests: Array<{
+    timestamp: string;
+    method: string;
+    path: string;
+    statusCode: string;
+    clientIp: string;
+    totalTime: number;
+    requestProcessingTime: number;
+    targetProcessingTime: number;
+    responseProcessingTime: number;
+  }>;
+  trafficByMinute: Array<{
+    timestamp: string;
+    count: number;
+    avgResponseTime: number;
+    maxResponseTime: number;
+    errors: number;
+    timeouts: number;
+    statusCodes: Record<string, number>;
+  }>;
+}
 
 export class JsonPresenter {
-  format(result: AnalysisResult): any {
+  format(result: AnalysisResult): JsonOutput {
     return {
       summary: {
         totalRequests: result.entries.length,
@@ -61,7 +116,15 @@ export class JsonPresenter {
           targetProcessingTime: entry.targetProcessingTime,
           responseProcessingTime: entry.responseProcessingTime
         })),
-      trafficByMinute: result.timeAnalysis
+      trafficByMinute: result.timeAnalysis.map(bucket => ({
+        timestamp: bucket.timestamp,
+        count: bucket.count,
+        avgResponseTime: bucket.avgResponseTime,
+        maxResponseTime: bucket.maxResponseTime,
+        errors: bucket.errors,
+        timeouts: bucket.timeouts,
+        statusCodes: bucket.statusCodes
+      }))
     };
   }
 

@@ -3,7 +3,7 @@
  */
 
 import { ALBLogEntry } from '@domain/alb-log-entry.entity';
-import { AnalysisResult, Stats, TimeAnalysisBucket } from '@domain/analysis-result.entity';
+import { AnalysisResult, type Stats, type TimeAnalysisBucket } from '@domain/analysis-result.entity';
 
 export class LogAnalyzerUseCase {
   analyze(lines: string[]): AnalysisResult {
@@ -19,7 +19,7 @@ export class LogAnalyzerUseCase {
 
     // Process each line
     for (const line of lines) {
-      if (!line.trim()) continue;
+      if (!line.trim()) {continue;}
 
       const entry = new ALBLogEntry(line.trim());
       entries.push(entry);
@@ -75,7 +75,7 @@ export class LogAnalyzerUseCase {
   }
 
   private calculateStats(numbers: number[]): Stats | null {
-    if (numbers.length === 0) return null;
+    if (numbers.length === 0) {return null;}
 
     const sorted = [...numbers].sort((a, b) => a - b);
     const sum = numbers.reduce((a, b) => a + b, 0);
@@ -98,7 +98,7 @@ export class LogAnalyzerUseCase {
   }
 
   private analyzeByTimeInterval(entries: ALBLogEntry[]): TimeAnalysisBucket[] {
-    if (entries.length === 0) return [];
+    if (entries.length === 0) {return [];}
 
     const byMinute = new Map<string, {
       timestamp: string;
@@ -110,7 +110,9 @@ export class LogAnalyzerUseCase {
     }>();
 
     entries.forEach(entry => {
-      if (!entry.timestampDate || isNaN(entry.timestampDate.getTime())) return;
+      if (!entry.timestampDate || isNaN(entry.timestampDate.getTime())) {
+        return;
+      }
 
       const minuteKey = new Date(entry.timestampDate);
       minuteKey.setSeconds(0, 0);
@@ -127,7 +129,10 @@ export class LogAnalyzerUseCase {
         });
       }
 
-      const bucket = byMinute.get(key)!;
+      const bucket = byMinute.get(key);
+      if (!bucket) {
+        return;
+      }
       bucket.count++;
 
       if (!entry.isTimeout) {
