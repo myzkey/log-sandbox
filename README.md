@@ -3,16 +3,32 @@
 [![CI](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/ci.yml)
 [![Coverage](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/coverage.yml/badge.svg)](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/coverage.yml)
 
-AWS Application Load Balancer (ALB) のアクセスログを解析するツールです。
+AWS Application Load Balancer (ALB) のアクセスログを解析するCLIツールです。
 
 ## 機能
 
 - レスポンスタイム統計（最小値、最大値、平均値、中央値、標準偏差）
 - ステータスコード分布
+- HTTPメソッド分布
 - よくアクセスされるエンドポイント
 - クライアントIP分析
 - エラー追跡（4xx、5xx）
-- 遅いリクエストの検出（5秒以上）
+- 遅いリクエストの検出（カスタマイズ可能な閾値）
+- 複数の出力形式（テキスト、JSON、CSV）
+
+## インストール
+
+```bash
+# リポジトリのクローン
+git clone https://github.com/YOUR_USERNAME/log-sandbox.git
+cd log-sandbox
+
+# 依存関係のインストール
+pnpm install
+
+# ビルド
+pnpm build
+```
 
 ## 使い方
 
@@ -20,78 +36,55 @@ AWS Application Load Balancer (ALB) のアクセスログを解析するツー�
 
 ```bash
 # ファイルから読み込んで画面に表示
-node alb-log-analyzer.js logfile.txt
+node dist/main.js logfile.txt
 
-# 日本語で表示
-node alb-log-analyzer.js logfile.txt --lang=ja
+# 標準入力から読み込む
+cat logfile.txt | node dist/main.js
 
-# 結果をテキストファイルに保存
-node alb-log-analyzer.js logfile.txt --output=result.txt
-
-# 結果をJSONファイルに保存
-node alb-log-analyzer.js logfile.txt --output=result.json --format=json
-
-# 結果をCSVファイルに保存
-node alb-log-analyzer.js logfile.txt --output=result.csv --format=csv
-
-# 日本語でテキストファイルに保存
-node alb-log-analyzer.js logfile.txt --lang=ja --output=result.txt
+# ログを直接貼り付ける（Ctrl+Dで終了）
+node dist/main.js
 ```
 
-### 標準入力から読み込む
+### 出力形式の指定
 
 ```bash
-cat logfile.txt | node alb-log-analyzer.js --output=result.txt
+# テキストファイルに保存
+node dist/main.js logfile.txt --output=result.txt
+
+# JSON形式で保存
+node dist/main.js logfile.txt --output=result.json --format=json
+
+# CSV形式で保存
+node dist/main.js logfile.txt --output=result.csv --format=csv
 ```
 
-または
+### 遅いリクエストの検出オプション
 
 ```bash
-node alb-log-analyzer.js < logfile.txt
-```
+# デフォルト（1秒以上のリクエストを上位100件表示）
+node dist/main.js logfile.txt
 
-### ログを直接貼り付ける
-
-```bash
-node alb-log-analyzer.js
-# ログを貼り付けて Ctrl+D で終了
-```
-
-## オプション
-
-- `--lang=ja` - 日本語で出力（デフォルト: en）
-- `--output=<ファイル名>` - 結果をファイルに保存
-- `--format=<形式>` - 出力形式（txt/json/csv、デフォルト: txt）
-- `--slow-limit=<件数>` - 遅いリクエストの表示件数（デフォルト: 100、all で全件表示）
-- `--slow-threshold=<秒数>` - 遅いリクエストの閾値（デフォルト: 1.0秒）
-
-### 例
-
-```bash
-# デフォルト（上位100件）
-node alb-log-analyzer.js log.txt --lang=ja
-
-# すべての遅いリクエストを表示
-node alb-log-analyzer.js log.txt --lang=ja --slow-limit=all
+# 0.5秒以上のリクエストを検出
+node dist/main.js logfile.txt --slow-threshold=0.5
 
 # 上位50件のみ表示
-node alb-log-analyzer.js log.txt --lang=ja --slow-limit=50
+node dist/main.js logfile.txt --slow-limit=50
 
-# 0.5秒以上のリクエストを上位100件表示
-node alb-log-analyzer.js log.txt --lang=ja --slow-threshold=0.5 --slow-limit=100
+# すべての遅いリクエストを表示
+node dist/main.js logfile.txt --slow-limit=all
+
+# 組み合わせ
+node dist/main.js logfile.txt --slow-threshold=0.5 --slow-limit=50
 ```
 
-## 実行例
+## オプション一覧
 
-```bash
-# サンプルログファイルを作成
-cat > sample.log << 'EOF'
-h2 2025-10-28T01:41:11.673240Z app/my-alb/abc123def456 203.0.113.10:40742 10.0.1.100:3000 0.002 0.526 0.000 204 204 58 231 "OPTIONS https://api.example.com:443/v1/services/123/items/456/location HTTP/2.0" "Mozilla/5.0" ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-target-group/abc123 "Root=1-69001f37-621bfadc46ed205510eacd15" "api.example.com" "arn:aws:acm:ap-northeast-1:123456789012:certificate/abc-123-def-456" 1 2025-10-28T01:41:11.145000Z "forward" "-" "-" "10.0.1.100:3000" "204" "-" "-" TID_abc123def456 "-" "-" "-"
-EOF
-
-# 解析実行
-node alb-log-analyzer.js sample.log
-```
+| オプション | 説明 | デフォルト値 |
+|-----------|------|------------|
+| `--output=<ファイル名>` | 結果をファイルに保存 | 標準出力 |
+| `--format=<形式>` | 出力形式（txt/json/csv） | txt |
+| `--slow-threshold=<秒数>` | 遅いリクエストの閾値（秒） | 1.0 |
+| `--slow-limit=<件数>` | 遅いリクエストの表示件数（allで全件） | 100 |
 
 ## 出力例
 
@@ -100,45 +93,55 @@ node alb-log-analyzer.js sample.log
 ALB Log Analysis Summary
 ================================================================================
 
-Total Requests: 8
+Total Requests: 1000
 
 Response Time Statistics (seconds):
-  Min:     0.0070
-  Max:     12.4690
-  Mean:    1.5763
-  Median:  0.0460
-  StdDev:  4.2031
+  Min:     0.0010
+  Max:     5.2340
+  Mean:    0.4521
+  Median:  0.1234
+  StdDev:  0.8765
 
 Status Code Distribution:
-  201:      4 ( 50.0%)
-  204:      4 ( 50.0%)
+  200:      850 ( 85.0%)
+  201:       50 (  5.0%)
+  404:       80 (  8.0%)
+  500:       20 (  2.0%)
 
 HTTP Methods:
-  POST:      4 ( 50.0%)
-  OPTIONS:   4 ( 50.0%)
+  GET:      700 ( 70.0%)
+  POST:     250 ( 25.0%)
+  PUT:       30 (  3.0%)
+  DELETE:    20 (  2.0%)
 
 Top 10 Endpoints:
-  POST /v1/services/23706/lots/15499/current_location
-    Count: 4 (50.0%)
-  OPTIONS /v1/services/23706/lots/15499/current_location
-    Count: 4 (50.0%)
+  GET /api/users
+    Count: 350 (35.0%)
+  POST /api/users
+    Count: 200 (20.0%)
+  ...
 
 Top 10 Client IPs:
-  106.131.184.101:      8 (100.0%)
+  203.0.113.10:      150 (15.0%)
+  198.51.100.20:     120 (12.0%)
+  ...
 
-Slow Requests (>5s): 1
+Slow Requests (>1.0s): 45
 
-Slowest Requests (top 5):
-  1. 12.469s - POST /v1/services/23706/lots/15499/current_location
-     [2025-10-28T01:41:23.692780Z] Status: 201
+Slowest Requests (top 100):
+  1. 5.234s - POST /api/heavy-operation
+     [2025-10-28T01:41:23.692780Z] Status: 200
+  2. 3.456s - GET /api/large-data
+     [2025-10-28T01:41:25.123456Z] Status: 200
+  ...
 ```
 
-## 必要な環境
+## 開発
+
+### 必要な環境
 
 - Node.js 20.0 以上
 - pnpm 10.0 以上
-
-## 開発
 
 ### セットアップ
 
@@ -146,17 +149,23 @@ Slowest Requests (top 5):
 # 依存関係のインストール
 pnpm install
 
+# 開発モード（ビルドせずに実行）
+pnpm dev
+
 # ビルド
 pnpm build
 
-# 開発モード
-pnpm dev
+# ウォッチモード（ファイル変更時に自動ビルド）
+pnpm watch
 ```
 
 ### テスト
 
 ```bash
 # テスト実行
+pnpm test
+
+# テスト実行（ウォッチモード）
 pnpm test
 
 # テスト実行（UIモード）
@@ -166,15 +175,35 @@ pnpm test:ui
 pnpm test:coverage
 ```
 
-### リント
+### コード品質チェック
 
 ```bash
+# TypeScript型チェック
+pnpm typecheck
+
 # ESLintチェック
 pnpm lint
 
 # ESLint自動修正
 pnpm lint:fix
+
+# すべてのチェックを実行（CI相当）
+pnpm typecheck && pnpm lint && pnpm test run
 ```
+
+### CI/CD
+
+GitHub Actionsで以下のチェックが自動実行されます：
+
+- **TypeScript型チェック** - `tsc --noEmit`で型エラーを検出
+- **ESLint** - コード品質とスタイルをチェック
+- **テスト** - Vitestで全テストを実行
+- **ビルド** - TypeScriptをコンパイル
+- **カバレッジ** - テストカバレッジをCodecovにアップロード
+
+実行タイミング：
+- mainブランチへのpush
+- mainブランチへのPR作成・更新
 
 ### プロジェクト構成
 
@@ -182,14 +211,76 @@ pnpm lint:fix
 
 ```
 src/
-├── domain/           # ドメイン層（エンティティ）
-├── application/      # アプリケーション層（ユースケース）
-├── infrastructure/   # インフラ層（外部システム連携）
-│   ├── config/      # 設定管理
-│   ├── filesystem/  # ファイルシステム操作
-│   └── s3/          # S3操作
-├── presentation/     # プレゼンテーション層（出力フォーマット）
-└── scripts/         # ユーティリティスクリプト
+├── domain/              # ドメイン層（ビジネスロジックの中核）
+│   ├── alb-log-entry.entity.ts       # ALBログエントリのエンティティ
+│   └── analysis-result.entity.ts     # 解析結果のエンティティ
+│
+├── application/         # アプリケーション層（ユースケース）
+│   └── log-analyzer.usecase.ts       # ログ解析のユースケース
+│
+├── infrastructure/      # インフラ層（外部システム連携）
+│   ├── config/         # 設定管理
+│   │   └── config-loader.ts          # 設定ファイル読み込み
+│   ├── filesystem/     # ファイルシステム操作
+│   │   ├── log-reader.interface.ts   # ログ読み込みインターフェース
+│   │   ├── file-log-reader.ts        # ファイルからログ読み込み
+│   │   ├── stdin-log-reader.ts       # 標準入力からログ読み込み
+│   │   └── log-combiner.ts           # gzipファイルの結合
+│   └── s3/             # AWS S3操作
+│       ├── s3-downloader.ts          # S3からログダウンロード
+│       └── s3-log-reader.ts          # S3から直接ログ読み込み
+│
+├── presentation/        # プレゼンテーション層（出力フォーマット）
+│   ├── console-presenter.ts          # テキスト形式出力
+│   ├── json-presenter.ts             # JSON形式出力
+│   └── csv-presenter.ts              # CSV形式出力
+│
+├── scripts/            # ユーティリティスクリプト
+│   └── download-and-analyze.ts       # S3ダウンロード＆解析スクリプト
+│
+└── main.ts             # エントリーポイント
+```
+
+### アーキテクチャの特徴
+
+- **依存性逆転の原則**: 外側の層が内側の層に依存（domain ← application ← infrastructure/presentation）
+- **テスタビリティ**: インターフェースを使用し、各層を独立してテスト可能
+- **拡張性**: 新しい出力形式やログソースを簡単に追加可能
+- **関心の分離**: ビジネスロジックと技術的詳細を明確に分離
+
+## S3からのログダウンロード（オプション）
+
+S3バケットから直接ALBログをダウンロードして解析することもできます。
+
+### 設定ファイルの作成
+
+```bash
+# config.example.jsonをコピー
+cp config.example.json config.json
+
+# config.jsonを編集してS3バケット情報を設定
+```
+
+`config.json`の例：
+
+```json
+{
+  "s3": {
+    "bucket": "your-alb-logs-bucket",
+    "prefix": "alb-logs/",
+    "region": "ap-northeast-1"
+  }
+}
+```
+
+### S3ダウンロードスクリプトの実行
+
+```bash
+# 開発モード
+pnpm download
+
+# 本番モード（ビルド後）
+pnpm download:prod
 ```
 
 ## ライセンス
