@@ -109,7 +109,7 @@ class DownloadAndAnalyzeScript {
     const analysisPath = path.join(this.outputDir, 'analysis.txt');
 
     try {
-      const command = `node dist/main.js ${combinedLogPath} --slow-limit=100 --output=${analysisPath}`;
+      const command = `tsx src/main.ts ${combinedLogPath} --slow-limit=100 --output=${analysisPath}`;
       execSync(command, { stdio: 'inherit' });
 
       this.printCompletionMessage(combinedLogPath);
@@ -131,19 +131,19 @@ class DownloadAndAnalyzeScript {
     console.log('');
     console.log('その他のオプション:');
     console.log('  # すべての遅いリクエストを表示');
-    console.log(`  node dist/main.js ${combinedLogPath} --slow-limit=all --output=${this.outputDir}/analysis-full.txt`);
+    console.log(`  tsx src/main.ts ${combinedLogPath} --slow-limit=all --output=${this.outputDir}/analysis-full.txt`);
     console.log('');
     console.log('  # 上位50件のみ表示');
-    console.log(`  node dist/main.js ${combinedLogPath} --slow-limit=50 --output=${this.outputDir}/analysis-top50.txt`);
+    console.log(`  tsx src/main.ts ${combinedLogPath} --slow-limit=50 --output=${this.outputDir}/analysis-top50.txt`);
     console.log('');
     console.log('  # 0.5秒以上のリクエストを上位100件');
-    console.log(`  node dist/main.js ${combinedLogPath} --slow-threshold=0.5 --slow-limit=100 --output=${this.outputDir}/analysis-slow.txt`);
+    console.log(`  tsx src/main.ts ${combinedLogPath} --slow-threshold=0.5 --slow-limit=100 --output=${this.outputDir}/analysis-slow.txt`);
     console.log('');
     console.log('  # JSONで保存');
-    console.log(`  node dist/main.js ${combinedLogPath} --output=${this.outputDir}/analysis.json --format=json`);
+    console.log(`  tsx src/main.ts ${combinedLogPath} --output=${this.outputDir}/analysis.json --format=json`);
     console.log('');
     console.log('  # CSVで保存');
-    console.log(`  node dist/main.js ${combinedLogPath} --output=${this.outputDir}/analysis.csv --format=csv`);
+    console.log(`  tsx src/main.ts ${combinedLogPath} --output=${this.outputDir}/analysis.csv --format=csv`);
   }
 
   async run(): Promise<void> {
