@@ -1,17 +1,17 @@
 # ALB Log Analyzer
 
-[![CI](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/ci.yml)
-[![Coverage](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/coverage.yml/badge.svg)](https://github.com/YOUR_USERNAME/log-sandbox/actions/workflows/coverage.yml)
+[![CI](https://github.com/myzkey/log-sandbox/actions/workflows/ci.yml/badge.svg)](https://github.com/myzkey/log-sandbox/actions/workflows/ci.yml)
+[![Coverage](https://github.com/myzkey/log-sandbox/actions/workflows/coverage.yml/badge.svg)](https://github.com/myzkey/log-sandbox/actions/workflows/coverage.yml)
 
-AWS Application Load Balancer (ALB) のアクセスログを解析するCLIツールです。
+AWS Application Load Balancer (ALB) のアクセスログを解析する CLI ツールです。
 
 ## 機能
 
 - レスポンスタイム統計（最小値、最大値、平均値、中央値、標準偏差）
 - ステータスコード分布
-- HTTPメソッド分布
+- HTTP メソッド分布
 - よくアクセスされるエンドポイント
-- クライアントIP分析
+- クライアント IP 分析
 - エラー追跡（4xx、5xx）
 - 遅いリクエストの検出（カスタマイズ可能な閾値）
 - 複数の出力形式（テキスト、JSON、CSV）
@@ -20,7 +20,7 @@ AWS Application Load Balancer (ALB) のアクセスログを解析するCLIツ�
 
 ```bash
 # リポジトリのクローン
-git clone https://github.com/YOUR_USERNAME/log-sandbox.git
+git clone https://github.com/myzkey/log-sandbox.git
 cd log-sandbox
 
 # 依存関係のインストール
@@ -79,12 +79,12 @@ node dist/main.js logfile.txt --slow-threshold=0.5 --slow-limit=50
 
 ## オプション一覧
 
-| オプション | 説明 | デフォルト値 |
-|-----------|------|------------|
-| `--output=<ファイル名>` | 結果をファイルに保存 | 標準出力 |
-| `--format=<形式>` | 出力形式（txt/json/csv） | txt |
-| `--slow-threshold=<秒数>` | 遅いリクエストの閾値（秒） | 1.0 |
-| `--slow-limit=<件数>` | 遅いリクエストの表示件数（allで全件） | 100 |
+| オプション                | 説明                                   | デフォルト値 |
+| ------------------------- | -------------------------------------- | ------------ |
+| `--output=<ファイル名>`   | 結果をファイルに保存                   | 標準出力     |
+| `--format=<形式>`         | 出力形式（txt/json/csv）               | txt          |
+| `--slow-threshold=<秒数>` | 遅いリクエストの閾値（秒）             | 1.0          |
+| `--slow-limit=<件数>`     | 遅いリクエストの表示件数（all で全件） | 100          |
 
 ## 出力例
 
@@ -193,17 +193,18 @@ pnpm typecheck && pnpm lint && pnpm test run
 
 ### CI/CD
 
-GitHub Actionsで以下のチェックが自動実行されます：
+GitHub Actions で以下のチェックが自動実行されます：
 
-- **TypeScript型チェック** - `tsc --noEmit`で型エラーを検出
+- **TypeScript 型チェック** - `tsc --noEmit`で型エラーを検出
 - **ESLint** - コード品質とスタイルをチェック
-- **テスト** - Vitestで全テストを実行
-- **ビルド** - TypeScriptをコンパイル
-- **カバレッジ** - テストカバレッジをCodecovにアップロード
+- **テスト** - Vitest で全テストを実行
+- **ビルド** - TypeScript をコンパイル
+- **カバレッジ** - テストカバレッジを Codecov にアップロード
 
 実行タイミング：
-- mainブランチへのpush
-- mainブランチへのPR作成・更新
+
+- main ブランチへの push
+- main ブランチへの PR 作成・更新
 
 ### プロジェクト構成
 
@@ -248,9 +249,9 @@ src/
 - **拡張性**: 新しい出力形式やログソースを簡単に追加可能
 - **関心の分離**: ビジネスロジックと技術的詳細を明確に分離
 
-## S3からのログダウンロード（オプション）
+## S3 からのログダウンロード（オプション）
 
-S3バケットから直接ALBログをダウンロードして解析することもできます。
+S3 バケットから直接 ALB ログをダウンロードして解析することもできます。
 
 ### 設定ファイルの作成
 
@@ -273,7 +274,7 @@ cp config.example.json config.json
 }
 ```
 
-### S3ダウンロードスクリプトの実行
+### S3 ダウンロードスクリプトの実行
 
 ```bash
 # 開発モード
