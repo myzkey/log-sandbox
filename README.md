@@ -30,51 +30,38 @@ pnpm install
 pnpm build
 ```
 
+## クイックスタート
+
+最も簡単な使い方は、S3から自動ダウンロードして解析することです：
+
+```bash
+# 1. 設定ファイルを作成
+cp config.example.json config.json
+# config.jsonを編集してAWS情報を設定
+
+# 2. 今日のログをダウンロード＆解析
+pnpm download
+
+# 3. 期間を指定して解析
+pnpm download --from=2025/10/29 --to=2025/10/31
+```
+
+詳細は「[S3からのログダウンロード＆解析](#s3-からのログダウンロード解析推奨)」を参照してください。
+
 ## 使い方
 
-### 基本的な使い方
+### 手動でログファイルを解析する場合
 
 ```bash
 # ファイルから読み込んで画面に表示
-node dist/main.js logfile.txt
+tsx src/main.ts logfile.txt
 
-# 標準入力から読み込む
-cat logfile.txt | node dist/main.js
+# 出力形式を指定
+tsx src/main.ts logfile.txt --output=result.json --format=json
+tsx src/main.ts logfile.txt --output=result.csv --format=csv
 
-# ログを直接貼り付ける（Ctrl+Dで終了）
-node dist/main.js
-```
-
-### 出力形式の指定
-
-```bash
-# テキストファイルに保存
-node dist/main.js logfile.txt --output=result.txt
-
-# JSON形式で保存
-node dist/main.js logfile.txt --output=result.json --format=json
-
-# CSV形式で保存
-node dist/main.js logfile.txt --output=result.csv --format=csv
-```
-
-### 遅いリクエストの検出オプション
-
-```bash
-# デフォルト（1秒以上のリクエストを上位100件表示）
-node dist/main.js logfile.txt
-
-# 0.5秒以上のリクエストを検出
-node dist/main.js logfile.txt --slow-threshold=0.5
-
-# 上位50件のみ表示
-node dist/main.js logfile.txt --slow-limit=50
-
-# すべての遅いリクエストを表示
-node dist/main.js logfile.txt --slow-limit=all
-
-# 組み合わせ
-node dist/main.js logfile.txt --slow-threshold=0.5 --slow-limit=50
+# 遅いリクエストの閾値を変更
+tsx src/main.ts logfile.txt --slow-threshold=0.5 --slow-limit=50
 ```
 
 ## オプション一覧
@@ -149,14 +136,8 @@ Slowest Requests (top 100):
 # 依存関係のインストール
 pnpm install
 
-# 開発モード（ビルドせずに実行）
-pnpm dev
-
 # ビルド
 pnpm build
-
-# ウォッチモード（ファイル変更時に自動ビルド）
-pnpm watch
 ```
 
 ### テスト
@@ -165,30 +146,11 @@ pnpm watch
 # テスト実行
 pnpm test
 
-# テスト実行（ウォッチモード）
-pnpm test
-
 # テスト実行（UIモード）
 pnpm test:ui
 
 # カバレッジ付きテスト
 pnpm test:coverage
-```
-
-### コード品質チェック
-
-```bash
-# TypeScript型チェック
-pnpm typecheck
-
-# ESLintチェック
-pnpm lint
-
-# ESLint自動修正
-pnpm lint:fix
-
-# すべてのチェックを実行（CI相当）
-pnpm typecheck && pnpm lint && pnpm test run
 ```
 
 ### CI/CD
@@ -249,9 +211,9 @@ src/
 - **拡張性**: 新しい出力形式やログソースを簡単に追加可能
 - **関心の分離**: ビジネスロジックと技術的詳細を明確に分離
 
-## S3 からのログダウンロード（オプション）
+## S3 からのログダウンロード＆解析（推奨）
 
-S3 バケットから直接 ALB ログをダウンロードして解析することもできます。
+S3 バケットから直接 ALB ログをダウンロードして解析できます。
 
 ### 設定ファイルの作成
 
@@ -259,30 +221,64 @@ S3 バケットから直接 ALB ログをダウンロードして解析するこ
 # config.example.jsonをコピー
 cp config.example.json config.json
 
-# config.jsonを編集してS3バケット情報を設定
+# config.jsonを編集してAWS情報を設定
 ```
 
 `config.json`の例：
 
 ```json
 {
-  "s3": {
-    "bucket": "your-alb-logs-bucket",
-    "prefix": "alb-logs/",
-    "region": "ap-northeast-1"
-  }
+  "awsProfile": "your-aws-profile",
+  "s3Bucket": "your-alb-logs-bucket",
+  "s3Prefix": "app/",
+  "awsAccountId": "123456789012",
+  "region": "ap-northeast-1"
 }
 ```
 
-### S3 ダウンロードスクリプトの実行
+### ダウンロード＆解析の実行
 
 ```bash
-# 開発モード
+# 今日のログを自動ダウンロード＆解析
 pnpm download
 
-# 本番モード（ビルド後）
-pnpm download:prod
+# 特定の日付を指定
+pnpm download 2025/10/29
+
+# 期間を指定（複数日分を一括ダウンロード）
+pnpm download --from=2025/10/29 --to=2025/10/31
+
+# 開始日のみ指定（その日だけ）
+pnpm download --from=2025/10/29
 ```
+
+### 実行の流れ
+
+1. **S3からダウンロード** - 指定した日付（または期間）のログファイルを取得
+2. **解凍・結合** - gzipファイルを解凍して1つのログファイルに結合
+3. **解析実行** - 結合したログを自動で解析
+4. **結果保存** - `logs/YYYY-MM-DD/analysis.txt`に保存
+
+### 出力ファイル
+
+```
+logs/
+├── 2025-10-29/                    # 単日の場合
+│   ├── *.gz                       # ダウンロードしたログファイル
+│   ├── combined.log               # 結合されたログ
+│   └── analysis.txt               # 解析結果
+│
+└── 2025-10-29_to_2025-10-31/      # 期間指定の場合
+    ├── *.gz
+    ├── combined.log
+    └── analysis.txt
+```
+
+### スキップ機能
+
+- すでにログファイルがダウンロード済みの場合は再ダウンロードをスキップ
+- すでに結合ログが存在する場合は再結合をスキップ
+- 効率的に再実行可能
 
 ## ライセンス
 
