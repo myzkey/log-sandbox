@@ -9,12 +9,8 @@
     "alb-log-analyzer": "./dist/main.js"
   },
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/main.js",
-    "dev": "ts-node src/main.ts",
-    "watch": "tsc --watch",
-    "download": "ts-node src/scripts/download-and-analyze.ts",
-    "download:prod": "pnpm build && node dist/scripts/download-and-analyze.js",
+    "build": "tsc && tsc-alias",
+    "download": "tsx src/scripts/download-and-analyze.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
@@ -40,7 +36,18 @@
     "@vitest/ui": "^4.0.5",
     "eslint": "^9.38.0",
     "ts-node": "^10.9.0",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.0.0",
     "vitest": "^4.0.5"
+  },
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "replacers": {
+      "exampleReplacer": {
+        "enabled": false
+      }
+    }
   }
 }

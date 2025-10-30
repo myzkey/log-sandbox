@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Infrastructure Layer: Log Combiner Tests
  */
@@ -23,10 +22,12 @@ describe("LogCombiner", () => {
     it("指定ディレクトリの.gzファイルを取得すること", () => {
       const mockFiles = ["file1.gz", "file2.gz", "file3.txt", "file4.log"];
 
-      vi.mocked(fs.readdirSync).mockReturnValue(mockFiles as any);
+      vi.mocked(fs.readdirSync).mockReturnValue(
+        mockFiles as unknown as ReturnType<typeof fs.readdirSync>
+      );
       vi.mocked(fs.statSync).mockReturnValue({
         isFile: () => true,
-      } as any);
+      } as fs.Stats);
 
       const result = combiner.getGzipFiles("/test/dir");
 
@@ -39,12 +40,14 @@ describe("LogCombiner", () => {
     it("ディレクトリを除外すること", () => {
       const mockFiles = ["file1.gz", "subdir"];
 
-      vi.mocked(fs.readdirSync).mockReturnValue(mockFiles as any);
+      vi.mocked(fs.readdirSync).mockReturnValue(
+        mockFiles as unknown as ReturnType<typeof fs.readdirSync>
+      );
       vi.mocked(fs.statSync).mockImplementation((filePath) => {
         if (filePath.toString().endsWith("subdir")) {
-          return { isFile: () => false } as any;
+          return { isFile: () => false } as fs.Stats;
         }
-        return { isFile: () => true } as any;
+        return { isFile: () => true } as fs.Stats;
       });
 
       const result = combiner.getGzipFiles("/test/dir");
