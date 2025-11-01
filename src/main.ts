@@ -6,7 +6,7 @@
  */
 
 import * as fs from 'fs';
-import { LogAnalyzerUseCase } from '@application/log-analyzer.usecase';
+import { LogAnalyzerUseCase } from '@application/log-analyzer';
 import { FileLogReader } from '@infrastructure/filesystem/file-log-reader';
 import { StdinLogReader } from '@infrastructure/filesystem/stdin-log-reader';
 import { ConsolePresenter, type PresentationOptions } from '@presentation/console-presenter';

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { LogAnalyzerUseCase } from './log-analyzer.usecase';
+import { LogAnalyzerUseCase } from './';
 
 describe('LogAnalyzerUseCase', () => {
   const usecase = new LogAnalyzerUseCase();

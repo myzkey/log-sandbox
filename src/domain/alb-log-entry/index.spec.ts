@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ALBLogEntry } from './alb-log-entry.entity';
+import { ALBLogEntry } from './';
 
 describe('ALBLogEntry', () => {
   const sampleLogLine = 'h2 2025-10-28T01:41:11.673240Z app/my-alb/abc123def456 203.0.113.10:40742 10.0.1.100:3000 0.002 0.526 0.000 204 204 58 231 "OPTIONS https://api.example.com:443/v1/services/123/items/456/location HTTP/2.0" "Mozilla/5.0" ECDHE-RSA-AES128-GCM-SHA256 TLSv1.2 arn:aws:elasticloadbalancing:ap-northeast-1:123456789012:targetgroup/my-target-group/abc123 "Root=1-69001f37-621bfadc46ed205510eacd15" "api.example.com" "arn:aws:acm:ap-northeast-1:123456789012:certificate/abc-123-def-456" 1 2025-10-28T01:41:11.145000Z "forward" "-" "-" "10.0.1.100:3000" "204" "-" "-" TID_abc123def456 "-" "-" "-"';
