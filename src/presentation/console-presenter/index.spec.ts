@@ -2,10 +2,10 @@
  * Presentation Layer: Console Presenter Tests
  */
 
-import { ALBLogEntry } from "@domain/alb-log-entry.entity";
-import { AnalysisResult } from "@domain/analysis-result.entity";
+import { ALBLogEntry } from "@domain/alb-log-entry";
+import { AnalysisResult } from "@domain/analysis-result";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ConsolePresenter } from "./console-presenter";
+import { ConsolePresenter } from "./";
 
 describe("ConsolePresenter", () => {
   let presenter: ConsolePresenter;

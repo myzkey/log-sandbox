@@ -2,8 +2,8 @@
  * Application Layer: Log Analyzer Use Case
  */
 
-import { ALBLogEntry } from '@domain/alb-log-entry.entity';
-import { AnalysisResult, type Stats, type TimeAnalysisBucket } from '@domain/analysis-result.entity';
+import { ALBLogEntry } from '@domain/alb-log-entry';
+import { AnalysisResult, type Stats, type TimeAnalysisBucket } from '@domain/analysis-result';
 
 export class LogAnalyzerUseCase {
   analyze(lines: string[]): AnalysisResult {

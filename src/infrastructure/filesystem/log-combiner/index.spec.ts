@@ -5,7 +5,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LogCombiner } from "./log-combiner";
+import { LogCombiner } from "./";
 
 // fs モジュールをモック
 vi.mock("fs");
