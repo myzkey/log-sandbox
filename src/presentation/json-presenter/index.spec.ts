@@ -2,8 +2,8 @@
  * Presentation Layer: JSON Presenter Tests
  */
 
-import { ALBLogEntry } from "@domain/alb-log-entry";
-import { AnalysisResult } from "@domain/analysis-result";
+import { ALBLogEntry } from "~/domain/alb-log-entry";
+import { AnalysisResult } from "~/domain/analysis-result";
 import { beforeEach, describe, expect, it } from "vitest";
 import { JsonPresenter } from "./";
 

@@ -33,9 +33,16 @@ export class ConfigLoader {
 
   /**
    * 設定を読み込む
-   * 優先順位: 環境変数 > config.json > config.example.json
+   * @param configPath 設定ファイルのパス（オプション）
+   * 優先順位: 指定されたconfigPath > 環境変数 > config.json > config.example.json
    */
-  load(): AppConfig {
+  load(configPath?: string): AppConfig {
+    // 指定されたパスがある場合は、キャッシュを無視して読み込む
+    if (configPath) {
+      return this.loadFromFile(configPath);
+    }
+
+    // キャッシュがある場合は返す
     if (this.config) {
       return this.config;
     }
@@ -47,9 +54,9 @@ export class ConfigLoader {
     }
 
     // config.jsonから読み込み
-    const configPath = this.findConfigFile();
-    if (configPath) {
-      this.config = this.loadFromFile(configPath);
+    const defaultConfigPath = this.findConfigFile();
+    if (defaultConfigPath) {
+      this.config = this.loadFromFile(defaultConfigPath);
       return this.config;
     }
 

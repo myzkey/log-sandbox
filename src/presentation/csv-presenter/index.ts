@@ -2,7 +2,7 @@
  * Presentation: CSV Presenter
  */
 
-import type { AnalysisResult } from '@domain/analysis-result';
+import type { AnalysisResult } from '~/domain/analysis-result';
 
 export class CsvPresenter {
   format(result: AnalysisResult): string {

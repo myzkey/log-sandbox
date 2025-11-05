@@ -2,7 +2,7 @@
  * Presentation: Console Presenter
  */
 
-import type { AnalysisResult } from "@domain/analysis-result";
+import type { AnalysisResult } from "~/domain/analysis-result";
 
 export interface PresentationOptions {
   slowRequestLimit?: number | null;

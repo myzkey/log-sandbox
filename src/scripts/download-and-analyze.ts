@@ -5,20 +5,27 @@
  * 使い方:
  *   pnpm download [YYYY/MM/DD]
  *   pnpm download --from=YYYY/MM/DD --to=YYYY/MM/DD
+ *   pnpm download --from=YYYY/MM/DD --to=YYYY/MM/DD --config=path/to/config.json
  * 例:
  *   pnpm download 2025/10/27
  *   pnpm download --from=2025/10/27 --to=2025/10/31
+ *   pnpm download --from=2025/10/27 --to=2025/10/31 --config=./config.prod.json
  */
 
-import { ConfigLoader } from "@infrastructure/config/config-loader";
-import { LogCombiner } from "@infrastructure/filesystem/log-combiner";
-import { S3Downloader } from "@infrastructure/s3/s3-downloader";
+import { ConfigLoader } from "~/infrastructure/config/config-loader";
+import { LogCombiner } from "~/infrastructure/filesystem/log-combiner";
+import { S3Downloader } from "~/infrastructure/s3/s3-downloader";
 import { execSync } from "child_process";
 import * as path from "path";
 
 interface DateRange {
   from: string;
   to: string;
+}
+
+interface ScriptOptions {
+  dateRange: DateRange;
+  configPath?: string;
 }
 
 class DownloadAndAnalyzeScript {
@@ -28,23 +35,17 @@ class DownloadAndAnalyzeScript {
   private logCombiner: LogCombiner;
   private config;
 
-  constructor(dateRange: DateRange) {
+  constructor(options: ScriptOptions) {
     // 設定を読み込み
-    this.config = ConfigLoader.getInstance().load();
+    this.config = ConfigLoader.getInstance().load(options.configPath);
+    this.dateRange = options.dateRange;
 
-    this.dateRange = dateRange;
+    // 出力ディレクトリ名を決定（バケット名を含める）
+    const dateStr = this.dateRange.from === this.dateRange.to
+      ? this.dateRange.from.replace(/\//g, "-")
+      : `${this.dateRange.from.replace(/\//g, "-")}_to_${this.dateRange.to.replace(/\//g, "-")}`;
 
-    // 出力ディレクトリ名を決定
-    if (this.dateRange.from === this.dateRange.to) {
-      this.outputDir = path.join(
-        "./logs",
-        this.dateRange.from.replace(/\//g, "-")
-      );
-    } else {
-      const fromStr = this.dateRange.from.replace(/\//g, "-");
-      const toStr = this.dateRange.to.replace(/\//g, "-");
-      this.outputDir = path.join("./logs", `${fromStr}_to_${toStr}`);
-    }
+    this.outputDir = path.join("./logs", this.config.s3Bucket, dateStr);
 
     // インフラ層のクラスを初期化
     this.s3Downloader = new S3Downloader({
@@ -243,16 +244,19 @@ class DownloadAndAnalyzeScript {
 }
 
 // 引数パース
-function parseArgs(): DateRange {
+function parseArgs(): ScriptOptions {
   const args = process.argv.slice(2);
   let from: string | undefined;
   let to: string | undefined;
+  let configPath: string | undefined;
 
   for (const arg of args) {
     if (arg.startsWith("--from=")) {
       from = arg.split("=")[1];
     } else if (arg.startsWith("--to=")) {
       to = arg.split("=")[1];
+    } else if (arg.startsWith("--config=")) {
+      configPath = arg.split("=")[1];
     } else if (!arg.startsWith("--")) {
       // 位置引数（後方互換性）
       from = arg;
@@ -274,13 +278,16 @@ function parseArgs(): DateRange {
     to = from;
   }
 
-  return { from, to };
+  return {
+    dateRange: { from, to },
+    configPath
+  };
 }
 
 // メイン処理
 async function main(): Promise<void> {
-  const dateRange = parseArgs();
-  const script = new DownloadAndAnalyzeScript(dateRange);
+  const options = parseArgs();
+  const script = new DownloadAndAnalyzeScript(options);
   await script.run();
 }
 
