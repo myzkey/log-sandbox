@@ -2,8 +2,8 @@
  * Presentation Layer: CSV Presenter Tests
  */
 
-import { ALBLogEntry } from "@domain/alb-log-entry";
-import { AnalysisResult } from "@domain/analysis-result";
+import { ALBLogEntry } from "~/domain/alb-log-entry";
+import { AnalysisResult } from "~/domain/analysis-result";
 import { describe, expect, it, beforeEach } from "vitest";
 import { CsvPresenter } from "./";
 

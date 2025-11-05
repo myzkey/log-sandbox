@@ -4,7 +4,6 @@
     "module": "ESNext",
     "lib": ["ES2020"],
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,12 +13,11 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": "./src",
+    // TODO: typescript7で削除
+    "baseUrl": "./",
+    "rootDir": "./",
     "paths": {
-      "@domain/*": ["domain/*"],
-      "@application/*": ["application/*"],
-      "@infrastructure/*": ["infrastructure/*"],
-      "@presentation/*": ["presentation/*"]
+      "~/*": ["src/*"]
     }
   },
   "ts-node": {

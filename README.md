@@ -236,6 +236,27 @@ cp config.example.json config.json
 }
 ```
 
+#### 複数の設定ファイルを管理する
+
+環境ごとに異なる設定ファイルを作成できます：
+
+```bash
+# 本番環境用
+config.prod.json
+
+# ステージング環境用
+config.staging.json
+
+# 開発環境用（デフォルト）
+config.json
+```
+
+実行時に `--config` オプションで使用する設定ファイルを指定できます。指定しない場合は、以下の優先順位で設定が読み込まれます：
+
+1. 環境変数（`AWS_PROFILE`, `S3_BUCKET`, `S3_PREFIX`, `AWS_ACCOUNT_ID`, `AWS_REGION`）
+2. `config.json`
+3. `config.example.json`
+
 ### ダウンロード＆解析の実行
 
 ```bash
@@ -250,6 +271,10 @@ pnpm download --from=2025/10/29 --to=2025/10/31
 
 # 開始日のみ指定（その日だけ）
 pnpm download --from=2025/10/29
+
+# 別の設定ファイルを使用
+pnpm download --config=./config.prod.json
+pnpm download --from=2025/10/29 --to=2025/10/31 --config=./config.staging.json
 ```
 
 ### 実行の流れ
@@ -257,21 +282,34 @@ pnpm download --from=2025/10/29
 1. **S3からダウンロード** - 指定した日付（または期間）のログファイルを取得
 2. **解凍・結合** - gzipファイルを解凍して1つのログファイルに結合
 3. **解析実行** - 結合したログを自動で解析
-4. **結果保存** - `logs/YYYY-MM-DD/analysis.txt`に保存
+4. **結果保存** - `logs/{bucket-name}/YYYY-MM-DD/analysis.txt`に保存
 
 ### 出力ファイル
 
 ```
 logs/
-├── 2025-10-29/                    # 単日の場合
-│   ├── *.gz                       # ダウンロードしたログファイル
-│   ├── combined.log               # 結合されたログ
-│   └── analysis.txt               # 解析結果
-│
-└── 2025-10-29_to_2025-10-31/      # 期間指定の場合
-    ├── *.gz
-    ├── combined.log
-    └── analysis.txt
+└── your-alb-logs-bucket/          # S3バケット名ごとにディレクトリが作成される
+    ├── 2025-10-29/                # 単日の場合
+    │   ├── *.gz                   # ダウンロードしたログファイル
+    │   ├── combined.log           # 結合されたログ
+    │   └── analysis.txt           # 解析結果
+    │
+    └── 2025-10-29_to_2025-10-31/  # 期間指定の場合
+        ├── *.gz
+        ├── combined.log
+        └── analysis.txt
+```
+
+複数のS3バケットを使用する場合、それぞれのバケット名でディレクトリが分かれます：
+
+```
+logs/
+├── production-alb-logs/
+│   └── 2025-10-29/
+│       └── ...
+└── staging-alb-logs/
+    └── 2025-10-29/
+        └── ...
 ```
 
 ### スキップ機能

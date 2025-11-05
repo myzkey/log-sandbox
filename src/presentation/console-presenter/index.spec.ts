@@ -2,8 +2,8 @@
  * Presentation Layer: Console Presenter Tests
  */
 
-import { ALBLogEntry } from "@domain/alb-log-entry";
-import { AnalysisResult } from "@domain/analysis-result";
+import { ALBLogEntry } from "~/domain/alb-log-entry";
+import { AnalysisResult } from "~/domain/analysis-result";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConsolePresenter } from "./";
 

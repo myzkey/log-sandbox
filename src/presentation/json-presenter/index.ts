@@ -2,7 +2,7 @@
  * Presentation: JSON Presenter
  */
 
-import type { AnalysisResult } from '@domain/analysis-result';
+import type { AnalysisResult } from '~/domain/analysis-result';
 
 interface JsonOutput {
   summary: {
