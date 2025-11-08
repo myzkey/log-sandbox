@@ -1,0 +1,22 @@
+{
+  "name": "@alb-analyzer/db",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./client": "./src/client.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.4",
+    "@libsql/client": "^0.14.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.28.1"
+  }
+}
