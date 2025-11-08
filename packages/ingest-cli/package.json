@@ -1,20 +1,23 @@
 {
-  "name": "alb-log-analyzer-monorepo",
+  "name": "@alb-analyzer/ingest-cli",
   "version": "1.0.0",
-  "private": true,
-  "description": "AWS Application Load Balancer (ALB) Log Analyzer - Monorepo",
+  "type": "module",
+  "description": "AWS Application Load Balancer (ALB) Log Analyzer CLI",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "bin": {
+    "alb-log-analyzer": "./dist/main.js"
+  },
   "scripts": {
-    "dev": "pnpm --filter @alb-analyzer/dashboard dev",
-    "build": "pnpm -r build",
-    "dev:dashboard": "pnpm --filter @alb-analyzer/dashboard dev",
-    "import": "pnpm --filter @alb-analyzer/ingest-cli import",
-    "db:generate": "pnpm --filter @alb-analyzer/db db:generate",
-    "db:migrate": "pnpm --filter @alb-analyzer/db db:migrate",
-    "db:push": "pnpm --filter @alb-analyzer/db db:push",
-    "db:studio": "pnpm --filter @alb-analyzer/db db:studio",
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "build": "tsc && tsc-alias",
+    "download": "tsx src/scripts/download-and-analyze.ts",
+    "import": "tsx src/scripts/import-to-db.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [
     "alb",
@@ -25,6 +28,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "@alb-analyzer/db": "workspace:*"
+  },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
     "@types/node": "^20.0.0",
