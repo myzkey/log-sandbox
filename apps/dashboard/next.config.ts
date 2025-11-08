@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     return config;
   },
   transpilePackages: ['@alb-analyzer/db'],
+  // Skip static generation during build for dynamic pages
+  output: 'standalone',
 };
 
 export default nextConfig;
