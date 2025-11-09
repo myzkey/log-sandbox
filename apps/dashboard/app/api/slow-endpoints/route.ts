@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@alb-analyzer/db/client';
 import { albLogs } from '@alb-analyzer/db/schema';
-import { sql, desc, eq } from 'drizzle-orm';
+import { sql, desc, eq, and } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
-
-interface SlowEndpoint {
-  path: string;
-  count: number;
-  avgResponseTime: number;
-  maxResponseTime: number;
-  minResponseTime: number;
-  p95ResponseTime: number;
-  errorCount: number;
-  timeoutCount: number;
-}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -43,14 +32,15 @@ export async function GET(request: NextRequest) {
   // Calculate p95 for each endpoint
   const endpointsWithP95 = await Promise.all(
     endpoints.map(async (endpoint) => {
+      const pathCondition = sql`${albLogs.requestPath} = ${endpoint.path}`;
+
       const timesQuery = db
         .select({ time: albLogs.totalTime })
-        .from(albLogs)
-        .where(sql`${albLogs.requestPath} = ${endpoint.path}`);
+        .from(albLogs);
 
       const times = await (whereClause
-        ? timesQuery.where(whereClause)
-        : timesQuery
+        ? timesQuery.where(and(whereClause, pathCondition)!)
+        : timesQuery.where(pathCondition)
       ).orderBy(albLogs.totalTime);
 
       const p95Index = Math.floor(times.length * 0.95);

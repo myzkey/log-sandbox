@@ -27,7 +27,6 @@ export function ProfileSelector({ profiles }: ProfileSelectorProps) {
 
   const currentProfile = searchParams.get('profile');
   const selectedProfile = currentProfile || '';
-  const displayName = profiles.find(p => p.name === selectedProfile)?.displayName || 'All Profiles';
 
   return (
     <div className="border-b border-gray-800 p-4">
