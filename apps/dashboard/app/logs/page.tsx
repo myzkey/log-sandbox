@@ -1,85 +1,73 @@
-import { db } from '@alb-analyzer/db/client';
-import { albLogs } from '@alb-analyzer/db/schema';
-import { desc, sql, and, like, or, eq } from 'drizzle-orm';
-import Link from 'next/link';
+'use client';
+
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { LogsTable } from '@/components/logs-table';
 import { LogsFilters } from '@/components/logs-filters';
+import type { ALBLog } from '@alb-analyzer/db/schema';
 
-export const dynamic = 'force-dynamic';
-
-interface SearchParams {
-  page?: string;
-  status?: string;
-  method?: string;
-  path?: string;
-  search?: string;
-}
-
-async function getLogs(searchParams: SearchParams) {
-  const page = parseInt(searchParams.page || '1');
-  const limit = 50;
-  const offset = (page - 1) * limit;
-
-  // Build WHERE conditions
-  const conditions = [];
-
-  if (searchParams.status) {
-    conditions.push(eq(albLogs.elbStatusCode, searchParams.status));
-  }
-  if (searchParams.method) {
-    conditions.push(eq(albLogs.requestMethod, searchParams.method));
-  }
-  if (searchParams.path) {
-    conditions.push(like(albLogs.requestPath, `%${searchParams.path}%`));
-  }
-  if (searchParams.search) {
-    conditions.push(
-      or(
-        like(albLogs.clientIp, `%${searchParams.search}%`),
-        like(albLogs.requestPath, `%${searchParams.search}%`),
-        like(albLogs.userAgent, `%${searchParams.search}%`)
-      )
-    );
-  }
-
-  // Get logs with filters
-  const logsQueryBase = db.select().from(albLogs);
-  const logsQuery = conditions.length > 0
-    ? logsQueryBase.where(and(...conditions))
-    : logsQueryBase;
-
-  const logs = await logsQuery
-    .orderBy(desc(albLogs.timestamp))
-    .limit(limit)
-    .offset(offset);
-
-  // Get total count with same filters
-  const countQueryBase = db.select({ count: sql<number>`count(*)` }).from(albLogs);
-  const countQuery = conditions.length > 0
-    ? countQueryBase.where(and(...conditions))
-    : countQueryBase;
-
-  const totalResult = await countQuery;
-  const total = totalResult[0]?.count || 0;
-
-  return {
-    logs,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+interface LogsResponse {
+  logs: ALBLog[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
 }
 
-export default async function LogsPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const { logs, pagination } = await getLogs(params);
+function buildApiUrl(params: URLSearchParams) {
+  const url = new URL('/api/logs', window.location.origin);
+  params.forEach((value, key) => {
+    url.searchParams.set(key, value);
+  });
+  return url.toString();
+}
+
+async function fetchApi<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="p-8 animate-pulse">
+      <div className="mb-8">
+        <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+      </div>
+      <div className="bg-gray-200 rounded-lg h-20 mb-6"></div>
+      <div className="bg-gray-200 rounded-lg h-96"></div>
+    </div>
+  );
+}
+
+export default function LogsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const { data: profiles } = useQuery<string[]>({
+    queryKey: ['profiles'],
+    queryFn: () => fetchApi<string[]>('/api/profiles'),
+  });
+
+  const { data: logsData, isLoading } = useQuery<LogsResponse>({
+    queryKey: ['logs', searchParams.toString()],
+    queryFn: () => fetchApi<LogsResponse>(buildApiUrl(searchParams)),
+  });
+
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('page', newPage.toString());
+    router.push(`/logs?${params.toString()}`);
+  };
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  const { logs = [], pagination } = logsData || { pagination: { page: 1, limit: 50, total: 0, totalPages: 0 } };
 
   return (
     <div className="p-8">
@@ -90,36 +78,38 @@ export default async function LogsPage({
         </p>
       </div>
 
-      <LogsFilters />
+      {profiles && <LogsFilters profiles={profiles} />}
 
       <div className="mt-6">
         <LogsTable logs={logs} />
       </div>
 
       {/* Pagination */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="text-sm text-gray-700">
-          Page {pagination.page} of {pagination.totalPages}
+      {pagination.totalPages > 0 && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-gray-700">
+            Page {pagination.page} of {pagination.totalPages}
+          </div>
+          <div className="flex gap-2">
+            {pagination.page > 1 && (
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Previous
+              </button>
+            )}
+            {pagination.page < pagination.totalPages && (
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Next
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {pagination.page > 1 && (
-            <Link
-              href={`/logs?page=${pagination.page - 1}`}
-              className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50"
-            >
-              Previous
-            </Link>
-          )}
-          {pagination.page < pagination.totalPages && (
-            <Link
-              href={`/logs?page=${pagination.page + 1}`}
-              className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50"
-            >
-              Next
-            </Link>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

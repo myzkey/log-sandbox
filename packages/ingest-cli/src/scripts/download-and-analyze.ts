@@ -17,6 +17,7 @@ import { LogCombiner } from "~/infrastructure/filesystem/log-combiner";
 import { S3Downloader } from "~/infrastructure/s3/s3-downloader";
 import { execSync } from "child_process";
 import * as path from "path";
+import * as fs from "fs";
 
 interface DateRange {
   from: string;
@@ -30,7 +31,7 @@ interface ScriptOptions {
 
 class DownloadAndAnalyzeScript {
   private dateRange: DateRange;
-  private outputDir: string;
+  private outputBaseDir: string;
   private s3Downloader: S3Downloader;
   private logCombiner: LogCombiner;
   private config;
@@ -40,12 +41,10 @@ class DownloadAndAnalyzeScript {
     this.config = ConfigLoader.getInstance().load(options.configPath);
     this.dateRange = options.dateRange;
 
-    // 出力ディレクトリ名を決定（バケット名を含める）
-    const dateStr = this.dateRange.from === this.dateRange.to
-      ? this.dateRange.from.replace(/\//g, "-")
-      : `${this.dateRange.from.replace(/\//g, "-")}_to_${this.dateRange.to.replace(/\//g, "-")}`;
-
-    this.outputDir = path.join("./logs", this.config.s3Bucket, dateStr);
+    // モノレポルートディレクトリを探す
+    const monorepoRoot = this.findMonorepoRoot() || process.cwd();
+    // 出力ベースディレクトリを設定（日付ごとにサブディレクトリを作成）
+    this.outputBaseDir = path.join(monorepoRoot, "logs", this.config.awsProfile);
 
     // インフラ層のクラスを初期化
     this.s3Downloader = new S3Downloader({
@@ -55,6 +54,33 @@ class DownloadAndAnalyzeScript {
     });
 
     this.logCombiner = new LogCombiner();
+  }
+
+  /**
+   * 日付から出力ディレクトリを取得
+   */
+  private getOutputDir(date: string): string {
+    const dateStr = date.replace(/\//g, "-");
+    return path.join(this.outputBaseDir, dateStr);
+  }
+
+  /**
+   * モノレポのルートディレクトリを探す
+   * pnpm-workspace.yaml があるディレクトリをルートとみなす
+   */
+  private findMonorepoRoot(): string | null {
+    let currentDir = process.cwd();
+    const root = path.parse(currentDir).root;
+
+    while (currentDir !== root) {
+      const workspaceFile = path.join(currentDir, 'pnpm-workspace.yaml');
+      if (fs.existsSync(workspaceFile)) {
+        return currentDir;
+      }
+      currentDir = path.dirname(currentDir);
+    }
+
+    return null;
   }
 
   private getTodayDate(): string {
@@ -83,15 +109,6 @@ class DownloadAndAnalyzeScript {
   }
 
   private async downloadLogs(): Promise<number> {
-    // 既にログファイルが存在するかチェック
-    const existingFiles = this.logCombiner.getGzipFiles(this.outputDir);
-
-    if (existingFiles.length > 0) {
-      console.log(`📁 既存のログファイルを発見: ${existingFiles.length}個`);
-      console.log("ℹ️  ダウンロードをスキップします");
-      return existingFiles.length;
-    }
-
     // S3からダウンロード
     console.log("📥 S3からログをダウンロード中...");
 
@@ -100,6 +117,17 @@ class DownloadAndAnalyzeScript {
       let totalFiles = 0;
 
       for (const date of dates) {
+        const outputDir = this.getOutputDir(date);
+
+        // 既にログファイルが存在するかチェック
+        const existingFiles = this.logCombiner.getGzipFiles(outputDir);
+
+        if (existingFiles.length > 0) {
+          console.log(`  ${date}: 📁 既存のログファイルを発見 (${existingFiles.length}個) - スキップ`);
+          totalFiles += existingFiles.length;
+          continue;
+        }
+
         console.log(`  ${date} のログを取得中...`);
         const s3Path = this.s3Downloader.buildS3Path(
           date,
@@ -110,7 +138,7 @@ class DownloadAndAnalyzeScript {
         try {
           const files = await this.s3Downloader.download(
             s3Path,
-            this.outputDir
+            outputDir
           );
           totalFiles += files.length;
           console.log(`  ✓ ${files.length}個のファイルを取得`);
@@ -131,32 +159,40 @@ class DownloadAndAnalyzeScript {
   }
 
   private async combineLogs(): Promise<void> {
-    const combinedLogPath = path.join(this.outputDir, "combined.log");
-
-    // 既に結合済みかチェック
-    if (this.logCombiner.isAlreadyCombined(combinedLogPath)) {
-      const lines = await this.logCombiner.combineGzipFiles(
-        [],
-        combinedLogPath
-      );
-      console.log(`📄 既存の結合ログを発見: ${lines}行`);
-      console.log("ℹ️  解凍・結合をスキップします");
-      return;
-    }
-
     console.log("📦 ログファイルを解凍して結合中...");
 
-    const gzipFiles = this.logCombiner.getGzipFiles(this.outputDir);
+    const dates = this.getDateRange(this.dateRange.from, this.dateRange.to);
 
-    try {
-      const lines = await this.logCombiner.combineGzipFiles(
-        gzipFiles,
-        combinedLogPath
-      );
-      console.log(`✅ ${lines}行のログを結合しました`);
-    } catch (error) {
-      console.error("❌ エラー:", (error as Error).message);
-      process.exit(1);
+    for (const date of dates) {
+      const outputDir = this.getOutputDir(date);
+      const combinedLogPath = path.join(outputDir, "combined.log");
+
+      // 既に結合済みかチェック
+      if (this.logCombiner.isAlreadyCombined(combinedLogPath)) {
+        const lines = await this.logCombiner.combineGzipFiles(
+          [],
+          combinedLogPath
+        );
+        console.log(`  ${date}: 📄 既存の結合ログを発見 (${lines}行) - スキップ`);
+        continue;
+      }
+
+      const gzipFiles = this.logCombiner.getGzipFiles(outputDir);
+
+      if (gzipFiles.length === 0) {
+        console.log(`  ${date}: ⚠ ログファイルが見つかりません - スキップ`);
+        continue;
+      }
+
+      try {
+        const lines = await this.logCombiner.combineGzipFiles(
+          gzipFiles,
+          combinedLogPath
+        );
+        console.log(`  ${date}: ✅ ${lines}行のログを結合しました`);
+      } catch (error) {
+        console.error(`  ${date}: ❌ エラー:`, (error as Error).message);
+      }
     }
   }
 
@@ -164,55 +200,69 @@ class DownloadAndAnalyzeScript {
     console.log("");
     console.log("📊 ログを解析中...");
 
-    const combinedLogPath = path.join(this.outputDir, "combined.log");
-    const analysisPath = path.join(this.outputDir, "analysis.txt");
+    const dates = this.getDateRange(this.dateRange.from, this.dateRange.to);
 
-    try {
-      const command = `tsx src/main.ts ${combinedLogPath} --slow-limit=100 --output=${analysisPath}`;
-      execSync(command, { stdio: "inherit" });
+    for (const date of dates) {
+      const outputDir = this.getOutputDir(date);
+      const combinedLogPath = path.join(outputDir, "combined.log");
+      const analysisPath = path.join(outputDir, "analysis.txt");
 
-      this.printCompletionMessage(combinedLogPath);
-    } catch {
-      console.error("❌ エラー: ログ解析に失敗しました");
-      process.exit(1);
+      if (!fs.existsSync(combinedLogPath)) {
+        console.log(`  ${date}: ⚠ 結合ログが見つかりません - スキップ`);
+        continue;
+      }
+
+      try {
+        console.log(`  ${date}: 解析中...`);
+        const command = `tsx src/main.ts ${combinedLogPath} --slow-limit=100 --output=${analysisPath}`;
+        execSync(command, { stdio: "pipe" });
+        console.log(`  ${date}: ✅ 解析完了`);
+      } catch {
+        console.error(`  ${date}: ❌ ログ解析に失敗しました`);
+      }
     }
+
+    this.printCompletionMessage();
   }
 
-  private printCompletionMessage(combinedLogPath: string): void {
-    const analysisPath = path.join(this.outputDir, "analysis.txt");
+  private printCompletionMessage(): void {
+    const dates = this.getDateRange(this.dateRange.from, this.dateRange.to);
 
     console.log("");
     console.log("=".repeat(60));
     console.log("✅ 完了！");
     console.log("=".repeat(60));
-    console.log(`結合ログ: ${combinedLogPath}`);
-    console.log(`解析結果: ${analysisPath}`);
+
+    for (const date of dates) {
+      const outputDir = this.getOutputDir(date);
+      const combinedLogPath = path.join(outputDir, "combined.log");
+      const analysisPath = path.join(outputDir, "analysis.txt");
+
+      if (fs.existsSync(combinedLogPath)) {
+        console.log(`\n${date}:`);
+        console.log(`  結合ログ: ${combinedLogPath}`);
+        if (fs.existsSync(analysisPath)) {
+          console.log(`  解析結果: ${analysisPath}`);
+        }
+      }
+    }
+
     console.log("");
     console.log("その他のオプション:");
     console.log("  # すべての遅いリクエストを表示");
-    console.log(
-      `  tsx src/main.ts ${combinedLogPath} --slow-limit=all --output=${this.outputDir}/analysis-full.txt`
-    );
+    console.log(`  tsx src/main.ts <combined.log> --slow-limit=all --output=<output-dir>/analysis-full.txt`);
     console.log("");
     console.log("  # 上位50件のみ表示");
-    console.log(
-      `  tsx src/main.ts ${combinedLogPath} --slow-limit=50 --output=${this.outputDir}/analysis-top50.txt`
-    );
+    console.log(`  tsx src/main.ts <combined.log> --slow-limit=50 --output=<output-dir>/analysis-top50.txt`);
     console.log("");
     console.log("  # 0.5秒以上のリクエストを上位100件");
-    console.log(
-      `  tsx src/main.ts ${combinedLogPath} --slow-threshold=0.5 --slow-limit=100 --output=${this.outputDir}/analysis-slow.txt`
-    );
+    console.log(`  tsx src/main.ts <combined.log> --slow-threshold=0.5 --slow-limit=100 --output=<output-dir>/analysis-slow.txt`);
     console.log("");
     console.log("  # JSONで保存");
-    console.log(
-      `  tsx src/main.ts ${combinedLogPath} --output=${this.outputDir}/analysis.json --format=json`
-    );
+    console.log(`  tsx src/main.ts <combined.log> --output=<output-dir>/analysis.json --format=json`);
     console.log("");
     console.log("  # CSVで保存");
-    console.log(
-      `  tsx src/main.ts ${combinedLogPath} --output=${this.outputDir}/analysis.csv --format=csv`
-    );
+    console.log(`  tsx src/main.ts <combined.log> --output=<output-dir>/analysis.csv --format=csv`);
   }
 
   async run(): Promise<void> {
@@ -227,7 +277,7 @@ class DownloadAndAnalyzeScript {
       console.log(`期間: ${this.dateRange.from} 〜 ${this.dateRange.to}`);
     }
 
-    console.log(`出力先: ${this.outputDir}`);
+    console.log(`出力先: ${this.outputBaseDir}`);
     console.log("");
 
     // 1. ログをダウンロード

@@ -1,7 +1,8 @@
 #!/usr/bin/env tsx
 import { db } from '@alb-analyzer/db/client';
-import { albLogs } from '@alb-analyzer/db/schema';
+import { albLogs, awsProfiles } from '@alb-analyzer/db/schema';
 import { ALBLogEntry } from '../domain/alb-log-entry';
+import { sql } from 'drizzle-orm';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
@@ -29,48 +30,136 @@ async function readLogFile(filePath: string): Promise<string[]> {
   return lines;
 }
 
-async function readLogsFromPath(logPath: string): Promise<string[]> {
+interface LogLine {
+  line: string;
+  awsProfile: string;
+}
+
+async function readLogsFromPath(logPath: string): Promise<LogLine[]> {
   const stats = fs.statSync(logPath);
 
   if (stats.isFile()) {
-    return readLogFile(logPath);
+    // ファイルの場合、パスから awsProfile を抽出
+    const awsProfile = extractAwsProfileFromPath(logPath);
+    const lines = await readLogFile(logPath);
+    return lines.map(line => ({ line, awsProfile }));
   } else if (stats.isDirectory()) {
-    const allLines: string[] = [];
-    const files = fs.readdirSync(logPath);
+    const allLinesWithProfile: LogLine[] = [];
 
-    for (const file of files) {
-      const filePath = path.join(logPath, file);
-      if (fs.statSync(filePath).isFile()) {
-        console.log(`Reading ${filePath}...`);
-        const lines = await readLogFile(filePath);
-        allLines.push(...lines);
-      }
-    }
+    // ディレクトリを再帰的に処理
+    await processDirectory(logPath, allLinesWithProfile);
 
-    return allLines;
+    return allLinesWithProfile;
   }
 
   throw new Error(`Path ${logPath} is neither a file nor a directory`);
 }
 
+async function processDirectory(dirPath: string, result: LogLine[]): Promise<void> {
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+
+    if (entry.isDirectory()) {
+      await processDirectory(fullPath, result);
+    } else if (entry.isFile() && (entry.name.endsWith('.log') || entry.name.endsWith('.gz'))) {
+      console.log(`Reading ${fullPath}...`);
+      const awsProfile = extractAwsProfileFromPath(fullPath);
+      const lines = await readLogFile(fullPath);
+      result.push(...lines.map(line => ({ line, awsProfile })));
+    }
+  }
+}
+
+/**
+ * ファイルパスから awsProfile を抽出
+ * logs/{awsProfile}/{date}/... の形式を想定
+ */
+function extractAwsProfileFromPath(filePath: string): string {
+  const parts = filePath.split(path.sep);
+  const logsIndex = parts.indexOf('logs');
+
+  if (logsIndex !== -1 && logsIndex + 1 < parts.length) {
+    return parts[logsIndex + 1];
+  }
+
+  return 'default';
+}
+
+/**
+ * AWS プロファイルを登録する（存在しない場合のみ）
+ */
+async function ensureProfileExists(profileName: string): Promise<void> {
+  const existing = await db
+    .select()
+    .from(awsProfiles)
+    .where(sql`${awsProfiles.name} = ${profileName}`)
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(awsProfiles).values({
+      name: profileName,
+      displayName: profileName.charAt(0).toUpperCase() + profileName.slice(1),
+      description: `AWS Profile: ${profileName}`,
+    });
+    console.log(`  ✓ Registered new AWS profile: ${profileName}`);
+  }
+}
+
+function findMonorepoRoot(): string | null {
+  let currentDir = process.cwd();
+  const root = path.parse(currentDir).root;
+
+  while (currentDir !== root) {
+    const workspaceFile = path.join(currentDir, 'pnpm-workspace.yaml');
+    if (fs.existsSync(workspaceFile)) {
+      return currentDir;
+    }
+    currentDir = path.dirname(currentDir);
+  }
+
+  return null;
+}
+
 async function importLogsToDB(): Promise<void> {
   const args = process.argv.slice(2);
-  const logPath = args[0] || './logs';
+  let logPath = args[0] || './logs';
+
+  // 相対パスの場合、モノレポルートを基準にする
+  if (!path.isAbsolute(logPath)) {
+    const monorepoRoot = findMonorepoRoot();
+    if (monorepoRoot) {
+      logPath = path.join(monorepoRoot, logPath);
+    }
+  }
 
   console.log(`Reading logs from ${logPath}...`);
-  const lines = await readLogsFromPath(logPath);
-  console.log(`Found ${lines.length} log lines`);
+  const logLines = await readLogsFromPath(logPath);
+  console.log(`Found ${logLines.length} log lines`);
 
-  console.log('Parsing and inserting into database...');
+  // 使用されるプロファイルを収集して登録
+  const uniqueProfiles = new Set<string>();
+  for (const { awsProfile } of logLines) {
+    uniqueProfiles.add(awsProfile);
+  }
+
+  console.log(`\nRegistering AWS profiles...`);
+  for (const profile of uniqueProfiles) {
+    await ensureProfileExists(profile);
+  }
+
+  console.log('\nParsing and inserting into database...');
   let insertedCount = 0;
   const batchSize = 100;
   const batch: typeof albLogs.$inferInsert[] = [];
 
-  for (const line of lines) {
+  for (const { line, awsProfile } of logLines) {
     try {
       const entry = new ALBLogEntry(line);
 
       batch.push({
+        awsProfile,
         type: entry.type,
         timestamp: entry.timestamp,
         elbName: entry.elbName,

@@ -8,15 +8,17 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx src/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "drizzle-orm": "^0.36.4",
-    "@libsql/client": "^0.14.0"
+    "@libsql/client": "^0.14.0",
+    "drizzle-orm": "^0.36.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.4.1",
     "drizzle-kit": "^0.28.1"
   }
 }

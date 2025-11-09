@@ -1,98 +1,117 @@
-import { db } from '@alb-analyzer/db/client';
-import { albLogs } from '@alb-analyzer/db/schema';
-import { sql, desc } from 'drizzle-orm';
+'use client';
+
+import { useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { StatsCards } from '@/components/stats-cards';
 import { StatusCodeChart } from '@/components/status-code-chart';
 import { TimeSeriesChart } from '@/components/time-series-chart';
 import { TopEndpoints } from '@/components/top-endpoints';
-import { RecentErrors } from '@/components/recent-errors';
+import { RecentClientErrors, RecentServerErrors } from '@/components/recent-errors';
+import type { ALBLog } from '@alb-analyzer/db/schema';
 
-export const dynamic = 'force-dynamic';
-
-async function getStats() {
-  const totalRequests = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(albLogs);
-
-  const avgResponseTime = await db
-    .select({ avg: sql<number>`avg(${albLogs.totalTime})` })
-    .from(albLogs);
-
-  const errorCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(albLogs)
-    .where(sql`cast(${albLogs.elbStatusCode} as integer) >= 400`);
-
-  const timeoutCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(albLogs)
-    .where(sql`${albLogs.isTimeout} = 1`);
-
-  return {
-    totalRequests: totalRequests[0]?.count ?? 0,
-    avgResponseTime: avgResponseTime[0]?.avg ?? 0,
-    errorCount: errorCount[0]?.count ?? 0,
-    timeoutCount: timeoutCount[0]?.count ?? 0,
-  };
+interface Stats {
+  totalRequests: number;
+  avgResponseTime: number;
+  clientErrorCount: number;
+  serverErrorCount: number;
+  timeoutCount: number;
 }
 
-async function getStatusCodeDistribution() {
-  return db
-    .select({
-      statusCode: albLogs.elbStatusCode,
-      count: sql<number>`count(*)`,
-    })
-    .from(albLogs)
-    .groupBy(albLogs.elbStatusCode)
-    .orderBy(desc(sql`count(*)`))
-    .limit(10);
+interface StatusCode {
+  statusCode: string;
+  count: number;
 }
 
-async function getTimeSeriesData() {
-  return db
-    .select({
-      hour: sql<string>`strftime('%Y-%m-%d %H:00', ${albLogs.timestamp})`,
-      count: sql<number>`count(*)`,
-      avgResponseTime: sql<number>`avg(${albLogs.totalTime})`,
-      errors: sql<number>`sum(case when cast(${albLogs.elbStatusCode} as integer) >= 400 then 1 else 0 end)`,
-    })
-    .from(albLogs)
-    .groupBy(sql`strftime('%Y-%m-%d %H:00', ${albLogs.timestamp})`)
-    .orderBy(sql`strftime('%Y-%m-%d %H:00', ${albLogs.timestamp})`)
-    .limit(24);
+interface TimeSeries {
+  hour: string;
+  count: number;
+  avgResponseTime: number;
+  errors: number;
 }
 
-async function getTopEndpoints() {
-  return db
-    .select({
-      path: albLogs.requestPath,
-      count: sql<number>`count(*)`,
-      avgResponseTime: sql<number>`avg(${albLogs.totalTime})`,
-    })
-    .from(albLogs)
-    .groupBy(albLogs.requestPath)
-    .orderBy(desc(sql`count(*)`))
-    .limit(10);
+interface Endpoint {
+  path: string;
+  count: number;
+  avgResponseTime: number;
 }
 
-async function getRecentErrors() {
-  return db
-    .select()
-    .from(albLogs)
-    .where(sql`cast(${albLogs.elbStatusCode} as integer) >= 400`)
-    .orderBy(desc(albLogs.timestamp))
-    .limit(10);
+function buildApiUrl(endpoint: string, profile?: string | null) {
+  const url = new URL(endpoint, window.location.origin);
+  if (profile) {
+    url.searchParams.set('profile', profile);
+  }
+  return url.toString();
 }
 
-export default async function DashboardPage() {
-  const [stats, statusCodes, timeSeries, topEndpoints, recentErrors] =
-    await Promise.all([
-      getStats(),
-      getStatusCodeDistribution(),
-      getTimeSeriesData(),
-      getTopEndpoints(),
-      getRecentErrors(),
-    ]);
+async function fetchApi<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Failed to fetch');
+  return res.json();
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-gray-200 rounded-lg h-32"></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="bg-gray-200 rounded-lg h-80"></div>
+        <div className="bg-gray-200 rounded-lg h-80"></div>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  const searchParams = useSearchParams();
+  const profile = searchParams.get('profile');
+
+  const { data: stats, isLoading: statsLoading } = useQuery<Stats>({
+    queryKey: ['stats', profile],
+    queryFn: () => fetchApi<Stats>(buildApiUrl('/api/stats', profile)),
+  });
+
+  const { data: statusCodes, isLoading: statusCodesLoading } = useQuery<StatusCode[]>({
+    queryKey: ['status-codes', profile],
+    queryFn: () => fetchApi<StatusCode[]>(buildApiUrl('/api/status-codes', profile)),
+  });
+
+  const { data: timeSeries, isLoading: timeSeriesLoading } = useQuery<TimeSeries[]>({
+    queryKey: ['time-series', profile],
+    queryFn: () => fetchApi<TimeSeries[]>(buildApiUrl('/api/time-series', profile)),
+  });
+
+  const { data: topEndpoints, isLoading: topEndpointsLoading } = useQuery<Endpoint[]>({
+    queryKey: ['top-endpoints', profile],
+    queryFn: () => fetchApi<Endpoint[]>(buildApiUrl('/api/top-endpoints', profile)),
+  });
+
+  const { data: clientErrors, isLoading: clientErrorsLoading } = useQuery<ALBLog[]>({
+    queryKey: ['client-errors', profile],
+    queryFn: () => fetchApi<ALBLog[]>(buildApiUrl('/api/client-errors', profile)),
+  });
+
+  const { data: serverErrors, isLoading: serverErrorsLoading } = useQuery<ALBLog[]>({
+    queryKey: ['server-errors', profile],
+    queryFn: () => fetchApi<ALBLog[]>(buildApiUrl('/api/server-errors', profile)),
+  });
+
+  const isLoading = statsLoading || statusCodesLoading || timeSeriesLoading ||
+                    topEndpointsLoading || clientErrorsLoading || serverErrorsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-8">
+        <div className="max-w-7xl mx-auto">
+          <LoadingSkeleton />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-8">
@@ -101,16 +120,20 @@ export default async function DashboardPage() {
           ALB Log Analytics Dashboard
         </h1>
 
-        <StatsCards stats={stats} />
+        {stats && <StatsCards stats={stats} />}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <TimeSeriesChart data={timeSeries} />
-          <StatusCodeChart data={statusCodes} />
+          {timeSeries && <TimeSeriesChart data={timeSeries} />}
+          {statusCodes && <StatusCodeChart data={statusCodes} />}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TopEndpoints data={topEndpoints} />
-          <RecentErrors data={recentErrors} />
+          {topEndpoints && <TopEndpoints data={topEndpoints} />}
+          {clientErrors && <RecentClientErrors data={clientErrors} />}
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 mt-6">
+          {serverErrors && <RecentServerErrors data={serverErrors} />}
         </div>
       </div>
     </div>
