@@ -3,7 +3,8 @@ import { Activity, AlertTriangle, Clock, TrendingUp } from 'lucide-react';
 interface Stats {
   totalRequests: number;
   avgResponseTime: number;
-  errorCount: number;
+  clientErrorCount: number;
+  serverErrorCount: number;
   timeoutCount: number;
 }
 
@@ -22,8 +23,14 @@ export function StatsCards({ stats }: { stats: Stats }) {
       color: 'bg-green-500',
     },
     {
-      title: 'Errors (4xx/5xx)',
-      value: stats.errorCount.toLocaleString(),
+      title: 'Client Errors (4xx)',
+      value: stats.clientErrorCount.toLocaleString(),
+      icon: AlertTriangle,
+      color: 'bg-yellow-500',
+    },
+    {
+      title: 'Server Errors (5xx)',
+      value: stats.serverErrorCount.toLocaleString(),
       icon: AlertTriangle,
       color: 'bg-red-500',
     },

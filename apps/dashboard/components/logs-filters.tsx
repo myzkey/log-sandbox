@@ -4,7 +4,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 
-export function LogsFilters() {
+interface LogsFiltersProps {
+  profiles: string[];
+}
+
+export function LogsFilters({ profiles }: LogsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -41,7 +45,26 @@ export function LogsFilters() {
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-lg font-semibold mb-4">Filters</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* AWS Profile Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            AWS Profile
+          </label>
+          <select
+            value={searchParams.get('profile') || ''}
+            onChange={(e) => handleFilterChange('profile', e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">All Profiles</option>
+            {profiles.map((profile) => (
+              <option key={profile} value={profile}>
+                {profile}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -108,7 +131,8 @@ export function LogsFilters() {
 
       {(searchParams.get('search') ||
         searchParams.get('status') ||
-        searchParams.get('method')) && (
+        searchParams.get('method') ||
+        searchParams.get('profile')) && (
         <div className="mt-4">
           <button
             onClick={clearFilters}

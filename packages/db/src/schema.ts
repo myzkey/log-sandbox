@@ -1,9 +1,18 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
+export const awsProfiles = sqliteTable('aws_profiles', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  displayName: text('display_name').notNull(),
+  description: text('description'),
+  createdAt: text('created_at').notNull().default('CURRENT_TIMESTAMP'),
+});
+
 export const albLogs = sqliteTable('alb_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
 
   // Basic info
+  awsProfile: text('aws_profile').notNull().default('default'),
   type: text('type').notNull(),
   timestamp: text('timestamp').notNull(),
   elbName: text('elb_name').notNull(),
@@ -49,6 +58,9 @@ export const albLogs = sqliteTable('alb_logs', {
   // Raw data for debugging
   rawLine: text('raw_line').notNull(),
 });
+
+export type AWSProfile = typeof awsProfiles.$inferSelect;
+export type NewAWSProfile = typeof awsProfiles.$inferInsert;
 
 export type ALBLog = typeof albLogs.$inferSelect;
 export type NewALBLog = typeof albLogs.$inferInsert;

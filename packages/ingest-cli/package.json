@@ -29,7 +29,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@alb-analyzer/db": "workspace:*"
+    "@alb-analyzer/db": "workspace:*",
+    "drizzle-orm": "^0.36.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",

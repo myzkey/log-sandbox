@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@alb-analyzer/db": "workspace:*",
+    "@tanstack/react-query": "^5.90.7",
     "drizzle-orm": "^0.36.4",
     "lucide-react": "^0.460.0",
     "next": "^15.0.3",
