@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@alb-analyzer/db/client';
 import { albLogs } from '@alb-analyzer/db/schema';
-import { desc, sql, and, like, or, eq } from 'drizzle-orm';
+import { desc, asc, sql, and, like, or, eq, gte, lte } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +20,10 @@ export async function GET(request: NextRequest) {
   const method = searchParams.get('method');
   const path = searchParams.get('path');
   const search = searchParams.get('search');
+  const startDate = searchParams.get('startDate');
+  const endDate = searchParams.get('endDate');
+  const sortBy = searchParams.get('sortBy') || 'timestamp';
+  const sortOrder = searchParams.get('sortOrder') || 'desc';
 
   if (profile) {
     conditions.push(eq(albLogs.awsProfile, profile));
@@ -42,6 +46,20 @@ export async function GET(request: NextRequest) {
       )
     );
   }
+  if (startDate) {
+    // Convert datetime-local format to ISO string for comparison
+    const startISO = new Date(startDate).toISOString();
+    conditions.push(gte(albLogs.timestamp, startISO));
+  }
+  if (endDate) {
+    // Convert datetime-local format to ISO string for comparison
+    const endISO = new Date(endDate).toISOString();
+    conditions.push(lte(albLogs.timestamp, endISO));
+  }
+
+  // Determine sort column and order
+  const sortColumn = sortBy === 'totalTime' ? albLogs.totalTime : albLogs.timestamp;
+  const orderFn = sortOrder === 'asc' ? asc : desc;
 
   // Get logs with filters
   const logsQueryBase = db.select().from(albLogs);
@@ -50,7 +68,7 @@ export async function GET(request: NextRequest) {
     : logsQueryBase;
 
   const logs = await logsQuery
-    .orderBy(desc(albLogs.timestamp))
+    .orderBy(orderFn(sortColumn))
     .limit(limit)
     .offset(offset);
 

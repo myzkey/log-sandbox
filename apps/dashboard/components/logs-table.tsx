@@ -1,8 +1,12 @@
 import type { ALBLog } from '@alb-analyzer/db/schema';
 import Link from 'next/link';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface LogsTableProps {
   logs: ALBLog[];
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (column: string) => void;
 }
 
 function getStatusColor(status: string) {
@@ -14,16 +18,37 @@ function getStatusColor(status: string) {
   return 'text-gray-600 bg-gray-50';
 }
 
-export function LogsTable({ logs }: LogsTableProps) {
+export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
+  const SortIcon = ({ column }: { column: string }) => {
+    if (sortBy !== column) {
+      return <ArrowUpDown className="h-4 w-4" />;
+    }
+    return sortOrder === 'asc' ? (
+      <ArrowUp className="h-4 w-4" />
+    ) : (
+      <ArrowDown className="h-4 w-4" />
+    );
+  };
+
+  const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
+    <th
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+      onClick={() => onSort?.(column)}
+    >
+      <div className="flex items-center gap-2">
+        {children}
+        <SortIcon column={column} />
+      </div>
+    </th>
+  );
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Timestamp
-              </th>
+              <SortableHeader column="timestamp">Timestamp</SortableHeader>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Method
               </th>
@@ -36,9 +61,7 @@ export function LogsTable({ logs }: LogsTableProps) {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Client IP
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Response Time
-              </th>
+              <SortableHeader column="totalTime">Response Time</SortableHeader>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>

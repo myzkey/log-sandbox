@@ -63,6 +63,23 @@ export default function LogsPage() {
     router.push(`/logs?${params.toString()}`);
   };
 
+  const handleSort = (column: string) => {
+    const params = new URLSearchParams(searchParams);
+    const currentSortBy = params.get('sortBy');
+    const currentSortOrder = params.get('sortOrder');
+
+    if (currentSortBy === column) {
+      // Toggle sort order
+      params.set('sortOrder', currentSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to desc for response time, asc for timestamp
+      params.set('sortBy', column);
+      params.set('sortOrder', column === 'totalTime' ? 'desc' : 'desc');
+    }
+    params.delete('page'); // Reset to first page
+    router.push(`/logs?${params.toString()}`);
+  };
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -81,7 +98,12 @@ export default function LogsPage() {
       {profiles && <LogsFilters profiles={profiles} />}
 
       <div className="mt-6">
-        <LogsTable logs={logs} />
+        <LogsTable
+          logs={logs}
+          sortBy={searchParams.get('sortBy') || undefined}
+          sortOrder={(searchParams.get('sortOrder') as 'asc' | 'desc') || undefined}
+          onSort={handleSort}
+        />
       </div>
 
       {/* Pagination */}
