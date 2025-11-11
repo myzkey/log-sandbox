@@ -12,6 +12,8 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [startDate, setStartDate] = useState(searchParams.get('startDate') || '');
+  const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,32 +40,80 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
 
   const clearFilters = () => {
     setSearch('');
+    setStartDate('');
+    setEndDate('');
     router.push('/logs');
+  };
+
+  const handleDateChange = (type: 'start' | 'end', value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value) {
+      params.set(type === 'start' ? 'startDate' : 'endDate', value);
+    } else {
+      params.delete(type === 'start' ? 'startDate' : 'endDate');
+    }
+    params.delete('page'); // Reset to first page
+
+    if (type === 'start') {
+      setStartDate(value);
+    } else {
+      setEndDate(value);
+    }
+
+    router.push(`/logs?${params.toString()}`);
   };
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-lg font-semibold mb-4">Filters</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* AWS Profile Filter */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            AWS Profile
-          </label>
-          <select
-            value={searchParams.get('profile') || ''}
-            onChange={(e) => handleFilterChange('profile', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            <option value="">All Profiles</option>
-            {profiles.map((profile) => (
-              <option key={profile} value={profile}>
-                {profile}
-              </option>
-            ))}
-          </select>
+      <div className="space-y-4">
+        {/* Date Range Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Start Date
+            </label>
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => handleDateChange('start', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              End Date
+            </label>
+            <input
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => handleDateChange('end', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
         </div>
+
+        {/* Other Filters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* AWS Profile Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              AWS Profile
+            </label>
+            <select
+              value={searchParams.get('profile') || ''}
+              onChange={(e) => handleFilterChange('profile', e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="">All Profiles</option>
+              {profiles.map((profile) => (
+                <option key={profile} value={profile}>
+                  {profile}
+                </option>
+              ))}
+            </select>
+          </div>
 
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="col-span-2">
@@ -127,12 +177,15 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
             <option value="HEAD">HEAD</option>
           </select>
         </div>
+        </div>
       </div>
 
       {(searchParams.get('search') ||
         searchParams.get('status') ||
         searchParams.get('method') ||
-        searchParams.get('profile')) && (
+        searchParams.get('profile') ||
+        searchParams.get('startDate') ||
+        searchParams.get('endDate')) && (
         <div className="mt-4">
           <button
             onClick={clearFilters}
