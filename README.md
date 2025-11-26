@@ -275,6 +275,10 @@ pnpm download --from=2025/10/29
 # 別の設定ファイルを使用
 pnpm download --config=./config.prod.json
 pnpm download --from=2025/10/29 --to=2025/10/31 --config=./config.staging.json
+
+# 既存ファイルを削除して再ダウンロード（S3の最新データを取得）
+pnpm download --force
+pnpm download:force  # 省略形
 ```
 
 ### 実行の流れ

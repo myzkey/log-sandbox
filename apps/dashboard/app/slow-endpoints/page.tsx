@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { SlowEndpointsTable } from '@/components/slow-endpoints-table';
-import { SlowEndpointsChart } from '@/components/slow-endpoints-chart';
+import { SlowEndpointsChart } from "@/components/slow-endpoints-chart";
+import { SlowEndpointsTable } from "@/components/slow-endpoints-table";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 
 interface SlowEndpoint {
   path: string;
@@ -30,14 +30,14 @@ interface SlowRequest {
 function buildApiUrl(endpoint: string, profile?: string | null) {
   const url = new URL(endpoint, window.location.origin);
   if (profile) {
-    url.searchParams.set('profile', profile);
+    url.searchParams.set("profile", profile);
   }
   return url.toString();
 }
 
 async function fetchApi<T>(url: string): Promise<T> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch');
+  if (!res.ok) throw new Error("Failed to fetch");
   return res.json();
 }
 
@@ -61,16 +61,22 @@ function LoadingSkeleton() {
 
 export default function SlowEndpointsPage() {
   const searchParams = useSearchParams();
-  const profile = searchParams.get('profile');
+  const profile = searchParams.get("profile");
 
-  const { data: slowEndpoints, isLoading: endpointsLoading } = useQuery<SlowEndpoint[]>({
-    queryKey: ['slow-endpoints', profile],
-    queryFn: () => fetchApi<SlowEndpoint[]>(buildApiUrl('/api/slow-endpoints', profile)),
+  const { data: slowEndpoints, isLoading: endpointsLoading } = useQuery<
+    SlowEndpoint[]
+  >({
+    queryKey: ["slow-endpoints", profile],
+    queryFn: () =>
+      fetchApi<SlowEndpoint[]>(buildApiUrl("/api/slow-endpoints", profile)),
   });
 
-  const { data: slowRequests, isLoading: requestsLoading } = useQuery<SlowRequest[]>({
-    queryKey: ['slow-requests', profile],
-    queryFn: () => fetchApi<SlowRequest[]>(buildApiUrl('/api/slow-requests', profile)),
+  const { data: slowRequests, isLoading: requestsLoading } = useQuery<
+    SlowRequest[]
+  >({
+    queryKey: ["slow-requests", profile],
+    queryFn: () =>
+      fetchApi<SlowRequest[]>(buildApiUrl("/api/slow-requests", profile)),
   });
 
   if (endpointsLoading || requestsLoading) {
@@ -80,25 +86,32 @@ export default function SlowEndpointsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Slow Endpoints Analysis</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Slow Endpoints Analysis
+        </h1>
         <p className="text-gray-600 mt-2">
-          Analyze endpoints by average response time and identify performance bottlenecks
+          Analyze endpoints by average response time and identify performance
+          bottlenecks
         </p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500">Slowest Endpoint</h3>
+          <h3 className="text-sm font-medium text-gray-500">
+            Slowest Endpoint
+          </h3>
           <p className="text-2xl font-bold text-gray-900 mt-2">
-            {slowEndpoints?.[0]?.avgResponseTime.toFixed(3) || '0.000'}s
+            {slowEndpoints?.[0]?.avgResponseTime.toFixed(3) || "0.000"}s
           </p>
           <p className="text-sm text-gray-600 mt-1 truncate">
-            {slowEndpoints?.[0]?.path || 'N/A'}
+            {slowEndpoints?.[0]?.path || "N/A"}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-sm font-medium text-gray-500">Endpoints Analyzed</h3>
+          <h3 className="text-sm font-medium text-gray-500">
+            Endpoints Analyzed
+          </h3>
           <p className="text-2xl font-bold text-gray-900 mt-2">
             {slowEndpoints?.length || 0}
           </p>
@@ -109,12 +122,12 @@ export default function SlowEndpointsPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-medium text-gray-500">Slowest Request</h3>
           <p className="text-2xl font-bold text-gray-900 mt-2">
-            {slowRequests?.[0]?.totalTime.toFixed(3) || '0.000'}s
+            {slowRequests?.[0]?.totalTime.toFixed(3) || "0.000"}s
           </p>
           <p className="text-sm text-gray-600 mt-1">
             {slowRequests?.[0]
               ? new Date(slowRequests[0].timestamp).toLocaleString()
-              : 'N/A'}
+              : "N/A"}
           </p>
         </div>
       </div>
@@ -183,8 +196,8 @@ export default function SlowEndpointsPage() {
                       <span
                         className={`px-2 py-1 text-xs font-semibold rounded-full ${
                           parseInt(req.statusCode) >= 400
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-green-100 text-green-800'
+                            ? "bg-red-100 text-red-800"
+                            : "bg-green-100 text-green-800"
                         }`}
                       >
                         {req.statusCode}

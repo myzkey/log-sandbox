@@ -2,9 +2,9 @@
  * Presentation Layer: JSON Presenter Tests
  */
 
+import { beforeEach, describe, expect, it } from "vitest";
 import { ALBLogEntry } from "~/domain/alb-log-entry";
 import { AnalysisResult } from "~/domain/analysis-result";
-import { beforeEach, describe, expect, it } from "vitest";
 import { JsonPresenter } from "./";
 
 describe("JsonPresenter", () => {

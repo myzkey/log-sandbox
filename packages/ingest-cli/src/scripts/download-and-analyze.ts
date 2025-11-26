@@ -6,18 +6,20 @@
  *   pnpm download [YYYY/MM/DD]
  *   pnpm download --from=YYYY/MM/DD --to=YYYY/MM/DD
  *   pnpm download --from=YYYY/MM/DD --to=YYYY/MM/DD --config=path/to/config.json
+ *   pnpm download --force  # 既存ファイルを削除して再ダウンロード
  * 例:
  *   pnpm download 2025/10/27
  *   pnpm download --from=2025/10/27 --to=2025/10/31
  *   pnpm download --from=2025/10/27 --to=2025/10/31 --config=./config.prod.json
+ *   pnpm download --force  # 今日のログを再取得
  */
 
+import { execSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
 import { ConfigLoader } from "~/infrastructure/config/config-loader";
 import { LogCombiner } from "~/infrastructure/filesystem/log-combiner";
 import { S3Downloader } from "~/infrastructure/s3/s3-downloader";
-import { execSync } from "child_process";
-import * as path from "path";
-import * as fs from "fs";
 
 interface DateRange {
   from: string;
@@ -27,6 +29,7 @@ interface DateRange {
 interface ScriptOptions {
   dateRange: DateRange;
   configPath?: string;
+  force?: boolean;
 }
 
 class DownloadAndAnalyzeScript {
@@ -35,16 +38,22 @@ class DownloadAndAnalyzeScript {
   private s3Downloader: S3Downloader;
   private logCombiner: LogCombiner;
   private config;
+  private force: boolean;
 
   constructor(options: ScriptOptions) {
     // 設定を読み込み
     this.config = ConfigLoader.getInstance().load(options.configPath);
     this.dateRange = options.dateRange;
+    this.force = options.force ?? false;
 
     // モノレポルートディレクトリを探す
     const monorepoRoot = this.findMonorepoRoot() || process.cwd();
     // 出力ベースディレクトリを設定（日付ごとにサブディレクトリを作成）
-    this.outputBaseDir = path.join(monorepoRoot, "logs", this.config.awsProfile);
+    this.outputBaseDir = path.join(
+      monorepoRoot,
+      "logs",
+      this.config.awsProfile
+    );
 
     // インフラ層のクラスを初期化
     this.s3Downloader = new S3Downloader({
@@ -65,6 +74,21 @@ class DownloadAndAnalyzeScript {
   }
 
   /**
+   * 出力ディレクトリ内のファイルを削除
+   */
+  private clearOutputDir(outputDir: string): void {
+    if (!fs.existsSync(outputDir)) {
+      return;
+    }
+
+    const files = fs.readdirSync(outputDir);
+    for (const file of files) {
+      const filePath = path.join(outputDir, file);
+      fs.unlinkSync(filePath);
+    }
+  }
+
+  /**
    * モノレポのルートディレクトリを探す
    * pnpm-workspace.yaml があるディレクトリをルートとみなす
    */
@@ -73,7 +97,7 @@ class DownloadAndAnalyzeScript {
     const root = path.parse(currentDir).root;
 
     while (currentDir !== root) {
-      const workspaceFile = path.join(currentDir, 'pnpm-workspace.yaml');
+      const workspaceFile = path.join(currentDir, "pnpm-workspace.yaml");
       if (fs.existsSync(workspaceFile)) {
         return currentDir;
       }
@@ -123,9 +147,17 @@ class DownloadAndAnalyzeScript {
         const existingFiles = this.logCombiner.getGzipFiles(outputDir);
 
         if (existingFiles.length > 0) {
-          console.log(`  ${date}: 📁 既存のログファイルを発見 (${existingFiles.length}個) - スキップ`);
-          totalFiles += existingFiles.length;
-          continue;
+          if (this.force) {
+            // --force: 既存ファイルを削除して再ダウンロード
+            console.log(`  ${date}: 🗑️  既存ファイルを削除中...`);
+            this.clearOutputDir(outputDir);
+          } else {
+            console.log(
+              `  ${date}: 📁 既存のログファイルを発見 (${existingFiles.length}個) - スキップ`
+            );
+            totalFiles += existingFiles.length;
+            continue;
+          }
         }
 
         console.log(`  ${date} のログを取得中...`);
@@ -136,10 +168,7 @@ class DownloadAndAnalyzeScript {
         );
 
         try {
-          const files = await this.s3Downloader.download(
-            s3Path,
-            outputDir
-          );
+          const files = await this.s3Downloader.download(s3Path, outputDir);
           totalFiles += files.length;
           console.log(`  ✓ ${files.length}個のファイルを取得`);
         } catch {
@@ -173,7 +202,9 @@ class DownloadAndAnalyzeScript {
           [],
           combinedLogPath
         );
-        console.log(`  ${date}: 📄 既存の結合ログを発見 (${lines}行) - スキップ`);
+        console.log(
+          `  ${date}: 📄 既存の結合ログを発見 (${lines}行) - スキップ`
+        );
         continue;
       }
 
@@ -250,19 +281,29 @@ class DownloadAndAnalyzeScript {
     console.log("");
     console.log("その他のオプション:");
     console.log("  # すべての遅いリクエストを表示");
-    console.log(`  tsx src/main.ts <combined.log> --slow-limit=all --output=<output-dir>/analysis-full.txt`);
+    console.log(
+      `  tsx src/main.ts <combined.log> --slow-limit=all --output=<output-dir>/analysis-full.txt`
+    );
     console.log("");
     console.log("  # 上位50件のみ表示");
-    console.log(`  tsx src/main.ts <combined.log> --slow-limit=50 --output=<output-dir>/analysis-top50.txt`);
+    console.log(
+      `  tsx src/main.ts <combined.log> --slow-limit=50 --output=<output-dir>/analysis-top50.txt`
+    );
     console.log("");
     console.log("  # 0.5秒以上のリクエストを上位100件");
-    console.log(`  tsx src/main.ts <combined.log> --slow-threshold=0.5 --slow-limit=100 --output=<output-dir>/analysis-slow.txt`);
+    console.log(
+      `  tsx src/main.ts <combined.log> --slow-threshold=0.5 --slow-limit=100 --output=<output-dir>/analysis-slow.txt`
+    );
     console.log("");
     console.log("  # JSONで保存");
-    console.log(`  tsx src/main.ts <combined.log> --output=<output-dir>/analysis.json --format=json`);
+    console.log(
+      `  tsx src/main.ts <combined.log> --output=<output-dir>/analysis.json --format=json`
+    );
     console.log("");
     console.log("  # CSVで保存");
-    console.log(`  tsx src/main.ts <combined.log> --output=<output-dir>/analysis.csv --format=csv`);
+    console.log(
+      `  tsx src/main.ts <combined.log> --output=<output-dir>/analysis.csv --format=csv`
+    );
   }
 
   async run(): Promise<void> {
@@ -278,6 +319,9 @@ class DownloadAndAnalyzeScript {
     }
 
     console.log(`出力先: ${this.outputBaseDir}`);
+    if (this.force) {
+      console.log(`モード: 強制再取得 (--force)`);
+    }
     console.log("");
 
     // 1. ログをダウンロード
@@ -299,6 +343,7 @@ function parseArgs(): ScriptOptions {
   let from: string | undefined;
   let to: string | undefined;
   let configPath: string | undefined;
+  let force = false;
 
   for (const arg of args) {
     if (arg.startsWith("--from=")) {
@@ -307,6 +352,8 @@ function parseArgs(): ScriptOptions {
       to = arg.split("=")[1];
     } else if (arg.startsWith("--config=")) {
       configPath = arg.split("=")[1];
+    } else if (arg === "--force") {
+      force = true;
     } else if (!arg.startsWith("--")) {
       // 位置引数（後方互換性）
       from = arg;
@@ -330,7 +377,8 @@ function parseArgs(): ScriptOptions {
 
   return {
     dateRange: { from, to },
-    configPath
+    configPath,
+    force,
   };
 }
 

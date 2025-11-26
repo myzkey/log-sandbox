@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@alb-analyzer/db/client';
-import { albLogs } from '@alb-analyzer/db/schema';
-import { sql, desc, eq, and } from 'drizzle-orm';
+import { db } from "@alb-analyzer/db/client";
+import { albLogs } from "@alb-analyzer/db/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const profile = searchParams.get('profile');
+  const profile = searchParams.get("profile");
 
   const whereClause = profile ? eq(albLogs.awsProfile, profile) : undefined;
 
@@ -34,9 +34,7 @@ export async function GET(request: NextRequest) {
     endpoints.map(async (endpoint) => {
       const pathCondition = sql`${albLogs.requestPath} = ${endpoint.path}`;
 
-      const timesQuery = db
-        .select({ time: albLogs.totalTime })
-        .from(albLogs);
+      const timesQuery = db.select({ time: albLogs.totalTime }).from(albLogs);
 
       const times = await (whereClause
         ? timesQuery.where(and(whereClause, pathCondition)!)

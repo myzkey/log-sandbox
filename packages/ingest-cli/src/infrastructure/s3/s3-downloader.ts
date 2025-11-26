@@ -2,9 +2,9 @@
  * Infrastructure: S3 Downloader
  */
 
-import { execSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import { execSync } from "child_process";
+import * as fs from "fs";
+import * as path from "path";
 
 export interface S3DownloadConfig {
   bucket: string;
@@ -26,8 +26,8 @@ export class S3Downloader {
 
     try {
       execSync(command, {
-        stdio: 'inherit',
-        env
+        stdio: "inherit",
+        env,
       });
 
       const files = this.getDownloadedFiles(outputDir);
@@ -38,7 +38,9 @@ export class S3Downloader {
 
       return files;
     } catch (error) {
-      throw new Error(`S3ダウンロードに失敗しました: ${(error as Error).message}`);
+      throw new Error(
+        `S3ダウンロードに失敗しました: ${(error as Error).message}`
+      );
     }
   }
 
@@ -54,9 +56,10 @@ export class S3Downloader {
    */
   private getDownloadedFiles(dir: string): string[] {
     try {
-      return fs.readdirSync(dir)
-        .filter(file => file.endsWith('.gz'))
-        .map(file => path.join(dir, file));
+      return fs
+        .readdirSync(dir)
+        .filter((file) => file.endsWith(".gz"))
+        .map((file) => path.join(dir, file));
     } catch {
       return [];
     }
