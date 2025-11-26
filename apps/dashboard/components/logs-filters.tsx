@@ -2,7 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, X, Download } from 'lucide-react';
+import { Search, ChevronDown, X, Download, Check } from 'lucide-react';
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import { DateTimePicker } from './date-time-picker';
 
 interface LogsFiltersProps {
   profiles: string[];
@@ -32,6 +34,14 @@ const METHOD_OPTIONS = [
   { value: 'PATCH', label: 'PATCH' },
   { value: 'OPTIONS', label: 'OPTIONS' },
   { value: 'HEAD', label: 'HEAD' },
+];
+
+const RESPONSE_TIME_OPTIONS = [
+  { value: '', label: 'All' },
+  ...Array.from({ length: 30 }, (_, i) => {
+    const val = ((i + 1) * 0.1).toFixed(1);
+    return { value: val, label: `≥ ${val}s` };
+  }),
 ];
 
 export function LogsFilters({ profiles }: LogsFiltersProps) {
@@ -138,37 +148,54 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Start Date <span className="text-gray-400 font-normal">(JST)</span>
             </label>
-            <input
-              type="datetime-local"
+            <DateTimePicker
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onChange={setStartDate}
+              placeholder="Select start date"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               End Date <span className="text-gray-400 font-normal">(JST)</span>
             </label>
-            <input
-              type="datetime-local"
+            <DateTimePicker
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              onChange={setEndDate}
+              placeholder="Select end date"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Response Time <span className="text-gray-400 font-normal">(sec)</span>
+              Response Time
             </label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="0.5"
-              value={minResponseTime}
-              onChange={(e) => setMinResponseTime(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+            <Listbox value={minResponseTime} onChange={setMinResponseTime}>
+              <div className="relative">
+                <ListboxButton className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                  <span className={minResponseTime ? 'text-gray-900' : 'text-gray-500'}>
+                    {RESPONSE_TIME_OPTIONS.find(o => o.value === minResponseTime)?.label || 'All'}
+                  </span>
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                </ListboxButton>
+                <ListboxOptions className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto focus:outline-none">
+                  {RESPONSE_TIME_OPTIONS.map((option) => (
+                    <ListboxOption
+                      key={option.value}
+                      value={option.value}
+                      className="cursor-pointer select-none px-4 py-2 hover:bg-gray-50 data-[selected]:bg-indigo-50 flex items-center justify-between"
+                    >
+                      {({ selected }) => (
+                        <>
+                          <span className={selected ? 'font-medium text-indigo-600' : 'text-gray-700'}>
+                            {option.label}
+                          </span>
+                          {selected && <Check className="h-4 w-4 text-indigo-600" />}
+                        </>
+                      )}
+                    </ListboxOption>
+                  ))}
+                </ListboxOptions>
+              </div>
+            </Listbox>
           </div>
         </div>
 
