@@ -1,11 +1,11 @@
-import { Activity, AlertTriangle, Clock, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, Clock, TrendingUp } from 'lucide-react'
 
 interface Stats {
-  totalRequests: number;
-  avgResponseTime: number;
-  clientErrorCount: number;
-  serverErrorCount: number;
-  timeoutCount: number;
+  totalRequests: number
+  avgResponseTime: number
+  clientErrorCount: number
+  serverErrorCount: number
+  timeoutCount: number
 }
 
 export function StatsCards({ stats }: { stats: Stats }) {
@@ -40,7 +40,7 @@ export function StatsCards({ stats }: { stats: Stats }) {
       icon: TrendingUp,
       color: 'bg-orange-500',
     },
-  ];
+  ]
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -58,5 +58,5 @@ export function StatsCards({ stats }: { stats: Stats }) {
         </div>
       ))}
     </div>
-  );
+  )
 }

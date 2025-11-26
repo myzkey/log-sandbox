@@ -3,5 +3,5 @@
  */
 
 export interface ILogReader {
-  readLines(): Promise<string[]>;
+  readLines(): Promise<string[]>
 }

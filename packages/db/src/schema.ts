@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 export const importedFiles = sqliteTable('imported_files', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -6,7 +6,7 @@ export const importedFiles = sqliteTable('imported_files', {
   fileSize: integer('file_size').notNull(),
   lineCount: integer('line_count').notNull(),
   importedAt: text('imported_at').notNull().default('CURRENT_TIMESTAMP'),
-});
+})
 
 export const awsProfiles = sqliteTable('aws_profiles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -14,7 +14,7 @@ export const awsProfiles = sqliteTable('aws_profiles', {
   displayName: text('display_name').notNull(),
   description: text('description'),
   createdAt: text('created_at').notNull().default('CURRENT_TIMESTAMP'),
-});
+})
 
 export const albLogs = sqliteTable('alb_logs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -65,13 +65,13 @@ export const albLogs = sqliteTable('alb_logs', {
 
   // Raw data for debugging
   rawLine: text('raw_line').notNull(),
-});
+})
 
-export type ImportedFile = typeof importedFiles.$inferSelect;
-export type NewImportedFile = typeof importedFiles.$inferInsert;
+export type ImportedFile = typeof importedFiles.$inferSelect
+export type NewImportedFile = typeof importedFiles.$inferInsert
 
-export type AWSProfile = typeof awsProfiles.$inferSelect;
-export type NewAWSProfile = typeof awsProfiles.$inferInsert;
+export type AWSProfile = typeof awsProfiles.$inferSelect
+export type NewAWSProfile = typeof awsProfiles.$inferInsert
 
-export type ALBLog = typeof albLogs.$inferSelect;
-export type NewALBLog = typeof albLogs.$inferInsert;
+export type ALBLog = typeof albLogs.$inferSelect
+export type NewALBLog = typeof albLogs.$inferInsert

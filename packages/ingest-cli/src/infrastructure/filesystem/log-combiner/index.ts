@@ -2,45 +2,40 @@
  * Infrastructure: Log File Combiner
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { pipeline } from "stream";
-import { promisify } from "util";
-import * as zlib from "zlib";
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { pipeline } from 'node:stream'
+import { promisify } from 'node:util'
+import * as zlib from 'node:zlib'
 
-const pipelineAsync = promisify(pipeline);
+const pipelineAsync = promisify(pipeline)
 
 export class LogCombiner {
   /**
    * 複数のgzipファイルを解凍して1つのファイルに結合
    */
-  async combineGzipFiles(
-    gzipFiles: string[],
-    outputPath: string
-  ): Promise<number> {
+  async combineGzipFiles(gzipFiles: string[], outputPath: string): Promise<number> {
     // 既に結合済みのファイルがあるかチェック
     if (fs.existsSync(outputPath)) {
-      const lines = this.countLines(outputPath);
-      return lines;
+      const lines = this.countLines(outputPath)
+      return lines
     }
 
-    const writeStream = fs.createWriteStream(outputPath);
+    const writeStream = fs.createWriteStream(outputPath)
 
     try {
       for (const gzipFile of gzipFiles) {
-        const readStream = fs.createReadStream(gzipFile);
-        const gunzip = zlib.createGunzip();
+        const readStream = fs.createReadStream(gzipFile)
+        const gunzip = zlib.createGunzip()
 
-        await pipelineAsync(readStream, gunzip, writeStream, { end: false });
+        await pipelineAsync(readStream, gunzip, writeStream, { end: false })
       }
 
-      writeStream.end();
+      writeStream.end()
 
-      return this.countLines(outputPath);
+      return this.countLines(outputPath)
     } catch (error) {
-      throw new Error(
-        `ログファイルの結合に失敗しました: ${(error as Error).message}`
-      );
+      throw new Error(`ログファイルの結合に失敗しました: ${(error as Error).message}`)
     }
   }
 
@@ -51,10 +46,10 @@ export class LogCombiner {
     try {
       return fs
         .readdirSync(dir)
-        .filter((file) => file.endsWith(".gz"))
-        .map((file) => path.join(dir, file));
+        .filter((file) => file.endsWith('.gz'))
+        .map((file) => path.join(dir, file))
     } catch {
-      return [];
+      return []
     }
   }
 
@@ -63,10 +58,10 @@ export class LogCombiner {
    */
   private countLines(filePath: string): number {
     try {
-      const content = fs.readFileSync(filePath, "utf-8");
-      return content.split("\n").filter((line) => line.trim()).length;
+      const content = fs.readFileSync(filePath, 'utf-8')
+      return content.split('\n').filter((line) => line.trim()).length
     } catch {
-      return 0;
+      return 0
     }
   }
 
@@ -74,6 +69,6 @@ export class LogCombiner {
    * 結合済みファイルが存在するかチェック
    */
   isAlreadyCombined(outputPath: string): boolean {
-    return fs.existsSync(outputPath);
+    return fs.existsSync(outputPath)
   }
 }

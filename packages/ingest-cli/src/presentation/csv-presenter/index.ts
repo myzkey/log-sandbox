@@ -2,12 +2,12 @@
  * Presentation: CSV Presenter
  */
 
-import type { AnalysisResult } from "~/domain/analysis-result";
+import type { AnalysisResult } from '~/domain/analysis-result'
 
 export class CsvPresenter {
   format(result: AnalysisResult): string {
     let csv =
-      "Timestamp,Method,Path,Status Code,Client IP,Request Processing Time,Target Processing Time,Response Processing Time,Total Time,Is Timeout\n";
+      'Timestamp,Method,Path,Status Code,Client IP,Request Processing Time,Target Processing Time,Response Processing Time,Total Time,Is Timeout\n'
 
     for (const entry of result.entries) {
       const row = [
@@ -20,11 +20,11 @@ export class CsvPresenter {
         entry.targetProcessingTime,
         entry.responseProcessingTime,
         entry.totalTime,
-        entry.isTimeout ? "true" : "false",
-      ];
-      csv += `${row.join(",")}\n`;
+        entry.isTimeout ? 'true' : 'false',
+      ]
+      csv += `${row.join(',')}\n`
     }
 
-    return csv;
+    return csv
   }
 }

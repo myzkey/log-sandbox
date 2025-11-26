@@ -1,34 +1,30 @@
-import type { ALBLog } from '@alb-analyzer/db/schema';
-import Link from 'next/link';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import type { ALBLog } from '@alb-analyzer/db/schema'
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import Link from 'next/link'
 
 interface LogsTableProps {
-  logs: ALBLog[];
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  onSort?: (column: string) => void;
+  logs: ALBLog[]
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  onSort?: (column: string) => void
 }
 
 function getStatusColor(status: string) {
-  const code = parseInt(status);
-  if (code >= 500) return 'text-red-600 bg-red-50';
-  if (code >= 400) return 'text-orange-600 bg-orange-50';
-  if (code >= 300) return 'text-blue-600 bg-blue-50';
-  if (code >= 200) return 'text-green-600 bg-green-50';
-  return 'text-gray-600 bg-gray-50';
+  const code = parseInt(status, 10)
+  if (code >= 500) return 'text-red-600 bg-red-50'
+  if (code >= 400) return 'text-orange-600 bg-orange-50'
+  if (code >= 300) return 'text-blue-600 bg-blue-50'
+  if (code >= 200) return 'text-green-600 bg-green-50'
+  return 'text-gray-600 bg-gray-50'
 }
 
 export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
   const SortIcon = ({ column }: { column: string }) => {
     if (sortBy !== column) {
-      return <ArrowUpDown className="h-4 w-4" />;
+      return <ArrowUpDown className="h-4 w-4" />
     }
-    return sortOrder === 'asc' ? (
-      <ArrowUp className="h-4 w-4" />
-    ) : (
-      <ArrowDown className="h-4 w-4" />
-    );
-  };
+    return sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+  }
 
   const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
     <th
@@ -40,7 +36,7 @@ export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
         <SortIcon column={column} />
       </div>
     </th>
-  );
+  )
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -84,7 +80,7 @@ export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                      log.elbStatusCode
+                      log.elbStatusCode,
                     )}`}
                   >
                     {log.elbStatusCode}
@@ -97,10 +93,7 @@ export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
                   {log.totalTime.toFixed(3)}s
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link
-                    href={`/logs/${log.id}`}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
+                  <Link href={`/logs/${log.id}`} className="text-indigo-600 hover:text-indigo-900">
                     View
                   </Link>
                 </td>
@@ -110,5 +103,5 @@ export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
         </table>
       </div>
     </div>
-  );
+  )
 }

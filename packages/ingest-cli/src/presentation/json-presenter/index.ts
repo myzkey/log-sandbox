@@ -2,61 +2,61 @@
  * Presentation: JSON Presenter
  */
 
-import type { AnalysisResult } from "~/domain/analysis-result";
+import type { AnalysisResult } from '~/domain/analysis-result'
 
 interface JsonOutput {
   summary: {
-    totalRequests: number;
-    timeouts: number;
-    errors: number;
-    slowRequests: number;
-  };
+    totalRequests: number
+    timeouts: number
+    errors: number
+    slowRequests: number
+  }
   responseTimeStats: {
-    requestsAnalyzed: number;
-    min: number;
-    max: number;
-    mean: number;
-    median: number;
-    stdDev: number;
-  } | null;
-  statusCodes: Record<string, number>;
-  httpMethods: Record<string, number>;
-  topEndpoints: Array<{ endpoint: string; count: number; percentage: string }>;
-  topClientIPs: Array<{ ip: string; count: number; percentage: string }>;
+    requestsAnalyzed: number
+    min: number
+    max: number
+    mean: number
+    median: number
+    stdDev: number
+  } | null
+  statusCodes: Record<string, number>
+  httpMethods: Record<string, number>
+  topEndpoints: Array<{ endpoint: string; count: number; percentage: string }>
+  topClientIPs: Array<{ ip: string; count: number; percentage: string }>
   timeouts: Array<{
-    timestamp: string;
-    statusCode: string;
-    method: string;
-    path: string;
-    clientIp: string;
-  }>;
+    timestamp: string
+    statusCode: string
+    method: string
+    path: string
+    clientIp: string
+  }>
   errors: Array<{
-    timestamp: string;
-    statusCode: string;
-    method: string;
-    path: string;
-    clientIp: string;
-  }>;
+    timestamp: string
+    statusCode: string
+    method: string
+    path: string
+    clientIp: string
+  }>
   slowRequests: Array<{
-    timestamp: string;
-    method: string;
-    path: string;
-    statusCode: string;
-    clientIp: string;
-    totalTime: number;
-    requestProcessingTime: number;
-    targetProcessingTime: number;
-    responseProcessingTime: number;
-  }>;
+    timestamp: string
+    method: string
+    path: string
+    statusCode: string
+    clientIp: string
+    totalTime: number
+    requestProcessingTime: number
+    targetProcessingTime: number
+    responseProcessingTime: number
+  }>
   trafficByMinute: Array<{
-    timestamp: string;
-    count: number;
-    avgResponseTime: number;
-    maxResponseTime: number;
-    errors: number;
-    timeouts: number;
-    statusCodes: Record<string, number>;
-  }>;
+    timestamp: string
+    count: number
+    avgResponseTime: number
+    maxResponseTime: number
+    errors: number
+    timeouts: number
+    statusCodes: Record<string, number>
+  }>
 }
 
 export class JsonPresenter {
@@ -80,20 +80,16 @@ export class JsonPresenter {
         : null,
       statusCodes: Object.fromEntries(result.statusCodes),
       httpMethods: Object.fromEntries(result.methods),
-      topEndpoints: this.sortMapByValue(result.endpoints, 10).map(
-        ([endpoint, count]) => ({
-          endpoint,
-          count,
-          percentage: ((count / result.entries.length) * 100).toFixed(1),
-        })
-      ),
-      topClientIPs: this.sortMapByValue(result.clientIps, 10).map(
-        ([ip, count]) => ({
-          ip,
-          count,
-          percentage: ((count / result.entries.length) * 100).toFixed(1),
-        })
-      ),
+      topEndpoints: this.sortMapByValue(result.endpoints, 10).map(([endpoint, count]) => ({
+        endpoint,
+        count,
+        percentage: ((count / result.entries.length) * 100).toFixed(1),
+      })),
+      topClientIPs: this.sortMapByValue(result.clientIps, 10).map(([ip, count]) => ({
+        ip,
+        count,
+        percentage: ((count / result.entries.length) * 100).toFixed(1),
+      })),
       timeouts: result.timeouts.map((entry) => ({
         timestamp: entry.timestamp,
         statusCode: entry.elbStatusCode,
@@ -131,14 +127,11 @@ export class JsonPresenter {
         timeouts: bucket.timeouts,
         statusCodes: bucket.statusCodes,
       })),
-    };
+    }
   }
 
-  private sortMapByValue<K>(
-    map: ReadonlyMap<K, number>,
-    limit: number | null
-  ): [K, number][] {
-    const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]);
-    return limit ? sorted.slice(0, limit) : sorted;
+  private sortMapByValue<K>(map: ReadonlyMap<K, number>, limit: number | null): [K, number][] {
+    const sorted = [...map.entries()].sort((a, b) => b[1] - a[1])
+    return limit ? sorted.slice(0, limit) : sorted
   }
 }
