@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@alb-analyzer/db/client';
 import { albLogs } from '@alb-analyzer/db/schema';
-import { desc, asc, sql, and, like, or, eq, gte, lte, inArray } from 'drizzle-orm';
+import { desc, asc, and, like, or, eq, gte, lte, inArray } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
 
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = 50;
-  const offset = (page - 1) * limit;
-
-  // Build WHERE conditions
+  // Build WHERE conditions (same as /api/logs)
   const conditions = [];
 
   const profile = searchParams.get('profile');
@@ -58,12 +54,10 @@ export async function GET(request: NextRequest) {
     );
   }
   if (startDate) {
-    // Treat datetime-local value as JST (UTC+9) and convert to UTC
     const startISO = new Date(startDate + '+09:00').toISOString();
     conditions.push(gte(albLogs.timestamp, startISO));
   }
   if (endDate) {
-    // Treat datetime-local value as JST (UTC+9) and convert to UTC
     const endISO = new Date(endDate + '+09:00').toISOString();
     conditions.push(lte(albLogs.timestamp, endISO));
   }
@@ -78,7 +72,7 @@ export async function GET(request: NextRequest) {
   const sortColumn = sortBy === 'totalTime' ? albLogs.totalTime : albLogs.timestamp;
   const orderFn = sortOrder === 'asc' ? asc : desc;
 
-  // Get logs with filters
+  // Get all logs with filters (limit to 10000 for safety)
   const logsQueryBase = db.select().from(albLogs);
   const logsQuery = conditions.length > 0
     ? logsQueryBase.where(and(...conditions))
@@ -86,25 +80,59 @@ export async function GET(request: NextRequest) {
 
   const logs = await logsQuery
     .orderBy(orderFn(sortColumn))
-    .limit(limit)
-    .offset(offset);
+    .limit(10000);
 
-  // Get total count with same filters
-  const countQueryBase = db.select({ count: sql<number>`count(*)` }).from(albLogs);
-  const countQuery = conditions.length > 0
-    ? countQueryBase.where(and(...conditions))
-    : countQueryBase;
+  // Generate CSV
+  const headers = [
+    'timestamp',
+    'method',
+    'path',
+    'status',
+    'client_ip',
+    'response_time_sec',
+    'target_processing_time',
+    'request_processing_time',
+    'response_processing_time',
+    'user_agent',
+    'aws_profile',
+  ];
 
-  const totalResult = await countQuery;
-  const total = totalResult[0]?.count || 0;
+  const escapeCSV = (value: string | number | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
 
-  return NextResponse.json({
-    logs,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+  const csvRows = [
+    headers.join(','),
+    ...logs.map(log => [
+      escapeCSV(log.timestamp),
+      escapeCSV(log.requestMethod),
+      escapeCSV(log.requestPath),
+      escapeCSV(log.elbStatusCode),
+      escapeCSV(log.clientIp),
+      escapeCSV(log.totalTime),
+      escapeCSV(log.targetProcessingTime),
+      escapeCSV(log.requestProcessingTime),
+      escapeCSV(log.responseProcessingTime),
+      escapeCSV(log.userAgent),
+      escapeCSV(log.awsProfile),
+    ].join(','))
+  ];
+
+  const csv = csvRows.join('\n');
+
+  // Generate filename with current date
+  const now = new Date();
+  const filename = `alb-logs-${now.toISOString().slice(0, 10)}.csv`;
+
+  return new NextResponse(csv, {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
     },
   });
 }

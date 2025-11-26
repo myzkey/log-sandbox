@@ -52,7 +52,7 @@ export const albLogs = sqliteTable('alb_logs', {
   sslCipher: text('ssl_cipher'),
   sslProtocol: text('ssl_protocol'),
   targetGroupArn: text('target_group_arn'),
-  traceId: text('trace_id'),
+  traceId: text('trace_id').unique(),
   domainName: text('domain_name'),
 
   // Raw data for debugging
