@@ -1,5 +1,13 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
+export const importedFiles = sqliteTable('imported_files', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  filePath: text('file_path').notNull().unique(),
+  fileSize: integer('file_size').notNull(),
+  lineCount: integer('line_count').notNull(),
+  importedAt: text('imported_at').notNull().default('CURRENT_TIMESTAMP'),
+});
+
 export const awsProfiles = sqliteTable('aws_profiles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull().unique(),
@@ -58,6 +66,9 @@ export const albLogs = sqliteTable('alb_logs', {
   // Raw data for debugging
   rawLine: text('raw_line').notNull(),
 });
+
+export type ImportedFile = typeof importedFiles.$inferSelect;
+export type NewImportedFile = typeof importedFiles.$inferInsert;
 
 export type AWSProfile = typeof awsProfiles.$inferSelect;
 export type NewAWSProfile = typeof awsProfiles.$inferInsert;
