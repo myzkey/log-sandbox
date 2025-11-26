@@ -191,10 +191,10 @@ async function importLogsToDB(): Promise<void> {
       });
 
       if (batch.length >= batchSize) {
-        await db.insert(albLogs).values(batch);
+        await db.insert(albLogs).values(batch).onConflictDoNothing();
         insertedCount += batch.length;
         batch.length = 0;
-        process.stdout.write(`\rInserted ${insertedCount} records...`);
+        process.stdout.write(`\rProcessed ${insertedCount} records...`);
       }
     } catch (error) {
       console.error('\nFailed to parse line:', error);
@@ -203,11 +203,11 @@ async function importLogsToDB(): Promise<void> {
 
   // Insert remaining records
   if (batch.length > 0) {
-    await db.insert(albLogs).values(batch);
+    await db.insert(albLogs).values(batch).onConflictDoNothing();
     insertedCount += batch.length;
   }
 
-  console.log(`\n\nSuccessfully imported ${insertedCount} records to database!`);
+  console.log(`\n\nProcessed ${insertedCount} records (duplicates skipped).`);
 }
 
 importLogsToDB().catch((error) => {
