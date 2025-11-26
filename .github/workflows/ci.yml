@@ -82,7 +82,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run ESLint
+      - name: Run Biome
         run: pnpm lint
 
   test:
