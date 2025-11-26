@@ -1,38 +1,57 @@
 #!/usr/bin/env tsx
-import { db } from '@alb-analyzer/db/client';
-import { albLogs, awsProfiles, importedFiles } from '@alb-analyzer/db/schema';
-import { ALBLogEntry } from '../domain/alb-log-entry';
-import { sql } from 'drizzle-orm';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as readline from 'node:readline';
-import * as zlib from 'node:zlib';
+import { db } from "@alb-analyzer/db/client";
+import { albLogs, awsProfiles, importedFiles } from "@alb-analyzer/db/schema";
+import { sql } from "drizzle-orm";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as readline from "node:readline";
+import * as zlib from "node:zlib";
+import { ALBLogEntry } from "../domain/alb-log-entry";
 
 /**
- * インポート済みファイルを取得
+ * インポート済みファイルを取得（パス → サイズのMap）
  */
-async function getImportedFiles(): Promise<Set<string>> {
-  const files = await db.select({ filePath: importedFiles.filePath }).from(importedFiles);
-  return new Set(files.map(f => f.filePath));
+async function getImportedFiles(): Promise<Map<string, number>> {
+  const files = await db
+    .select({
+      filePath: importedFiles.filePath,
+      fileSize: importedFiles.fileSize,
+    })
+    .from(importedFiles);
+  return new Map(files.map((f) => [f.filePath, f.fileSize]));
 }
 
 /**
- * ファイルをインポート済みとして記録
+ * ファイルをインポート済みとして記録（サイズ変更時は更新）
  */
-async function markFileAsImported(filePath: string, fileSize: number, lineCount: number): Promise<void> {
-  await db.insert(importedFiles).values({
-    filePath,
-    fileSize,
-    lineCount,
-    importedAt: new Date().toISOString(),
-  }).onConflictDoNothing();
+async function markFileAsImported(
+  filePath: string,
+  fileSize: number,
+  lineCount: number
+): Promise<void> {
+  await db
+    .insert(importedFiles)
+    .values({
+      filePath,
+      fileSize,
+      lineCount,
+      importedAt: new Date().toISOString(),
+    })
+    .onConflictDoUpdate({
+      target: importedFiles.filePath,
+      set: {
+        fileSize,
+        lineCount,
+        importedAt: new Date().toISOString(),
+      },
+    });
 }
 
 async function readLogFile(filePath: string): Promise<string[]> {
   const lines: string[] = [];
   let fileStream: NodeJS.ReadableStream = fs.createReadStream(filePath);
 
-  if (filePath.endsWith('.gz')) {
+  if (filePath.endsWith(".gz")) {
     fileStream = fileStream.pipe(zlib.createGunzip());
   }
 
@@ -42,7 +61,7 @@ async function readLogFile(filePath: string): Promise<string[]> {
   });
 
   for await (const line of rl) {
-    if (line.trim() && !line.startsWith('#')) {
+    if (line.trim() && !line.startsWith("#")) {
       lines.push(line.trim());
     }
   }
@@ -56,7 +75,10 @@ interface FileInfo {
   size: number;
 }
 
-async function collectLogFiles(dirPath: string, result: FileInfo[]): Promise<void> {
+async function collectLogFiles(
+  dirPath: string,
+  result: FileInfo[]
+): Promise<void> {
   const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
   for (const entry of entries) {
@@ -64,7 +86,10 @@ async function collectLogFiles(dirPath: string, result: FileInfo[]): Promise<voi
 
     if (entry.isDirectory()) {
       await collectLogFiles(fullPath, result);
-    } else if (entry.isFile() && (entry.name.endsWith('.log') || entry.name.endsWith('.gz'))) {
+    } else if (
+      entry.isFile() &&
+      (entry.name.endsWith(".log") || entry.name.endsWith(".gz"))
+    ) {
       const awsProfile = extractAwsProfileFromPath(fullPath);
       const stats = fs.statSync(fullPath);
       result.push({ path: fullPath, awsProfile, size: stats.size });
@@ -78,13 +103,13 @@ async function collectLogFiles(dirPath: string, result: FileInfo[]): Promise<voi
  */
 function extractAwsProfileFromPath(filePath: string): string {
   const parts = filePath.split(path.sep);
-  const logsIndex = parts.indexOf('logs');
+  const logsIndex = parts.indexOf("logs");
 
   if (logsIndex !== -1 && logsIndex + 1 < parts.length) {
     return parts[logsIndex + 1];
   }
 
-  return 'default';
+  return "default";
 }
 
 /**
@@ -112,7 +137,7 @@ function findMonorepoRoot(): string | null {
   const root = path.parse(currentDir).root;
 
   while (currentDir !== root) {
-    const workspaceFile = path.join(currentDir, 'pnpm-workspace.yaml');
+    const workspaceFile = path.join(currentDir, "pnpm-workspace.yaml");
     if (fs.existsSync(workspaceFile)) {
       return currentDir;
     }
@@ -124,7 +149,7 @@ function findMonorepoRoot(): string | null {
 
 async function processFile(
   file: FileInfo,
-  batch: typeof albLogs.$inferInsert[],
+  batch: (typeof albLogs.$inferInsert)[],
   batchSize: number
 ): Promise<{ insertedCount: number; lineCount: number }> {
   const lines = await readLogFile(file.path);
@@ -141,7 +166,7 @@ async function processFile(
         elbName: entry.elbName,
         clientIp: entry.clientIp,
         clientPort: entry.clientPort,
-        targetIp: entry.targetPort.split(':')[0] || null,
+        targetIp: entry.targetPort.split(":")[0] || null,
         targetPort: entry.targetPort,
         requestProcessingTime: entry.requestProcessingTime,
         targetProcessingTime: entry.targetProcessingTime,
@@ -179,11 +204,28 @@ async function processFile(
   return { insertedCount, lineCount: lines.length };
 }
 
+/**
+ * 全テーブルのレコードを削除
+ */
+async function resetDatabase(): Promise<void> {
+  console.log("Resetting database...");
+  await db.delete(albLogs);
+  await db.delete(importedFiles);
+  await db.delete(awsProfiles);
+  console.log("✓ All records deleted\n");
+}
+
 async function importLogsToDB(): Promise<void> {
   const args = process.argv.slice(2);
-  const forceImport = args.includes('--force');
-  const filteredArgs = args.filter(a => !a.startsWith('--'));
-  let logPath = filteredArgs[0] || './logs';
+  const forceImport = args.includes("--force");
+  const resetDb = args.includes("--reset");
+  const filteredArgs = args.filter((a) => !a.startsWith("--"));
+  let logPath = filteredArgs[0] || "./logs";
+
+  // --reset: 全レコード削除してからインポート
+  if (resetDb) {
+    await resetDatabase();
+  }
 
   // 相対パスの場合、モノレポルートを基準にする
   if (!path.isAbsolute(logPath)) {
@@ -208,42 +250,54 @@ async function importLogsToDB(): Promise<void> {
   console.log(`Found ${allFiles.length} log files`);
 
   // インポート済みファイルを取得
-  const importedFileSet = await getImportedFiles();
+  const importedFileMap = await getImportedFiles();
 
-  // 新規ファイルのみフィルタ
+  // 新規または更新されたファイルのみフィルタ
   const newFiles = forceImport
     ? allFiles
-    : allFiles.filter(f => !importedFileSet.has(f.path));
+    : allFiles.filter((f) => {
+        const importedSize = importedFileMap.get(f.path);
+        // 未インポート or サイズが変わった場合は対象
+        return importedSize === undefined || importedSize !== f.size;
+      });
 
   const skippedCount = allFiles.length - newFiles.length;
   if (skippedCount > 0) {
-    console.log(`Skipping ${skippedCount} already imported files`);
+    console.log(`Skipping ${skippedCount} unchanged files`);
   }
 
   if (newFiles.length === 0) {
-    console.log('No new files to import.');
+    console.log("No new files to import.");
     return;
   }
 
   console.log(`Importing ${newFiles.length} new files...`);
 
   // 使用されるプロファイルを収集して登録
-  const uniqueProfiles = new Set(newFiles.map(f => f.awsProfile));
+  const uniqueProfiles = new Set(newFiles.map((f) => f.awsProfile));
   console.log(`\nRegistering AWS profiles...`);
   for (const profile of uniqueProfiles) {
     await ensureProfileExists(profile);
   }
 
-  console.log('\nParsing and inserting into database...');
+  console.log("\nParsing and inserting into database...");
   let totalInserted = 0;
   const batchSize = 100;
-  const batch: typeof albLogs.$inferInsert[] = [];
+  const batch: (typeof albLogs.$inferInsert)[] = [];
 
   for (let i = 0; i < newFiles.length; i++) {
     const file = newFiles[i];
-    process.stdout.write(`\r[${i + 1}/${newFiles.length}] Processing ${path.basename(file.path)}...`);
+    process.stdout.write(
+      `\r[${i + 1}/${newFiles.length}] Processing ${path.basename(
+        file.path
+      )}...`
+    );
 
-    const { insertedCount, lineCount } = await processFile(file, batch, batchSize);
+    const { insertedCount, lineCount } = await processFile(
+      file,
+      batch,
+      batchSize
+    );
     totalInserted += insertedCount;
 
     // バッチの残りをフラッシュしてファイルを記録
@@ -257,10 +311,12 @@ async function importLogsToDB(): Promise<void> {
     await markFileAsImported(file.path, file.size, lineCount);
   }
 
-  console.log(`\n\nImported ${totalInserted} records from ${newFiles.length} files.`);
+  console.log(
+    `\n\nImported ${totalInserted} records from ${newFiles.length} files.`
+  );
 }
 
 importLogsToDB().catch((error) => {
-  console.error('Error importing logs:', error);
+  console.error("Error importing logs:", error);
   process.exit(1);
 });

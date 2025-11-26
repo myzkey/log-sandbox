@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@alb-analyzer/db/client';
-import { albLogs } from '@alb-analyzer/db/schema';
-import { desc, asc, and, like, or, eq, gte, lte, inArray } from 'drizzle-orm';
+import { db } from "@alb-analyzer/db/client";
+import { albLogs } from "@alb-analyzer/db/schema";
+import { and, asc, desc, eq, gte, inArray, like, lte, or } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -11,22 +11,22 @@ export async function GET(request: NextRequest) {
   // Build WHERE conditions (same as /api/logs)
   const conditions = [];
 
-  const profile = searchParams.get('profile');
-  const status = searchParams.get('status');
-  const method = searchParams.get('method');
-  const path = searchParams.get('path');
-  const search = searchParams.get('search');
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
-  const minTime = searchParams.get('minTime');
-  const sortBy = searchParams.get('sortBy') || 'timestamp';
-  const sortOrder = searchParams.get('sortOrder') || 'desc';
+  const profile = searchParams.get("profile");
+  const status = searchParams.get("status");
+  const method = searchParams.get("method");
+  const path = searchParams.get("path");
+  const search = searchParams.get("search");
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
+  const minTime = searchParams.get("minTime");
+  const sortBy = searchParams.get("sortBy") || "timestamp";
+  const sortOrder = searchParams.get("sortOrder") || "desc";
 
   if (profile) {
     conditions.push(eq(albLogs.awsProfile, profile));
   }
   if (status) {
-    const statuses = status.split(',').filter(Boolean);
+    const statuses = status.split(",").filter(Boolean);
     if (statuses.length === 1) {
       conditions.push(eq(albLogs.elbStatusCode, statuses[0]));
     } else if (statuses.length > 1) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
   }
   if (method) {
-    const methods = method.split(',').filter(Boolean);
+    const methods = method.split(",").filter(Boolean);
     if (methods.length === 1) {
       conditions.push(eq(albLogs.requestMethod, methods[0]));
     } else if (methods.length > 1) {
@@ -54,11 +54,11 @@ export async function GET(request: NextRequest) {
     );
   }
   if (startDate) {
-    const startISO = new Date(startDate + '+09:00').toISOString();
+    const startISO = new Date(startDate + "+09:00").toISOString();
     conditions.push(gte(albLogs.timestamp, startISO));
   }
   if (endDate) {
-    const endISO = new Date(endDate + '+09:00').toISOString();
+    const endISO = new Date(endDate + "+09:00").toISOString();
     conditions.push(lte(albLogs.timestamp, endISO));
   }
   if (minTime) {
@@ -69,61 +69,63 @@ export async function GET(request: NextRequest) {
   }
 
   // Determine sort column and order
-  const sortColumn = sortBy === 'totalTime' ? albLogs.totalTime : albLogs.timestamp;
-  const orderFn = sortOrder === 'asc' ? asc : desc;
+  const sortColumn =
+    sortBy === "totalTime" ? albLogs.totalTime : albLogs.timestamp;
+  const orderFn = sortOrder === "asc" ? asc : desc;
 
   // Get all logs with filters (limit to 10000 for safety)
   const logsQueryBase = db.select().from(albLogs);
-  const logsQuery = conditions.length > 0
-    ? logsQueryBase.where(and(...conditions))
-    : logsQueryBase;
+  const logsQuery =
+    conditions.length > 0
+      ? logsQueryBase.where(and(...conditions))
+      : logsQueryBase;
 
-  const logs = await logsQuery
-    .orderBy(orderFn(sortColumn))
-    .limit(10000);
+  const logs = await logsQuery.orderBy(orderFn(sortColumn)).limit(10000);
 
   // Generate CSV
   const headers = [
-    'timestamp',
-    'method',
-    'path',
-    'status',
-    'client_ip',
-    'response_time_sec',
-    'target_processing_time',
-    'request_processing_time',
-    'response_processing_time',
-    'user_agent',
-    'aws_profile',
+    "timestamp",
+    "method",
+    "path",
+    "status",
+    "client_ip",
+    "response_time_sec",
+    "target_processing_time",
+    "request_processing_time",
+    "response_processing_time",
+    "user_agent",
+    "aws_profile",
   ];
 
   const escapeCSV = (value: string | number | null | undefined): string => {
-    if (value === null || value === undefined) return '';
+    if (value === null || value === undefined) return "";
     const str = String(value);
-    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
   };
 
   const csvRows = [
-    headers.join(','),
-    ...logs.map(log => [
-      escapeCSV(log.timestamp),
-      escapeCSV(log.requestMethod),
-      escapeCSV(log.requestPath),
-      escapeCSV(log.elbStatusCode),
-      escapeCSV(log.clientIp),
-      escapeCSV(log.totalTime),
-      escapeCSV(log.targetProcessingTime),
-      escapeCSV(log.requestProcessingTime),
-      escapeCSV(log.responseProcessingTime),
-      escapeCSV(log.userAgent),
-      escapeCSV(log.awsProfile),
-    ].join(','))
+    headers.join(","),
+    ...logs.map((log) =>
+      [
+        escapeCSV(log.timestamp),
+        escapeCSV(log.requestMethod),
+        escapeCSV(log.requestPath),
+        escapeCSV(log.elbStatusCode),
+        escapeCSV(log.clientIp),
+        escapeCSV(log.totalTime),
+        escapeCSV(log.targetProcessingTime),
+        escapeCSV(log.requestProcessingTime),
+        escapeCSV(log.responseProcessingTime),
+        escapeCSV(log.userAgent),
+        escapeCSV(log.awsProfile),
+      ].join(",")
+    ),
   ];
 
-  const csv = csvRows.join('\n');
+  const csv = csvRows.join("\n");
 
   // Generate filename with current date
   const now = new Date();
@@ -131,8 +133,8 @@ export async function GET(request: NextRequest) {
 
   return new NextResponse(csv, {
     headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
 }

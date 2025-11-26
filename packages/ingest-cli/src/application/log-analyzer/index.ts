@@ -2,8 +2,12 @@
  * Application Layer: Log Analyzer Use Case
  */
 
-import { ALBLogEntry } from '~/domain/alb-log-entry';
-import { AnalysisResult, type Stats, type TimeAnalysisBucket } from '~/domain/analysis-result';
+import { ALBLogEntry } from "~/domain/alb-log-entry";
+import {
+  AnalysisResult,
+  type Stats,
+  type TimeAnalysisBucket,
+} from "~/domain/analysis-result";
 
 export class LogAnalyzerUseCase {
   analyze(lines: string[]): AnalysisResult {
@@ -19,14 +23,19 @@ export class LogAnalyzerUseCase {
 
     // Process each line
     for (const line of lines) {
-      if (!line.trim()) {continue;}
+      if (!line.trim()) {
+        continue;
+      }
 
       const entry = new ALBLogEntry(line.trim());
       entries.push(entry);
 
       // Update counters
       this.incrementMap(statusCodes, entry.targetStatusCode);
-      this.incrementMap(endpoints, `${entry.requestMethod} ${entry.requestPath}`);
+      this.incrementMap(
+        endpoints,
+        `${entry.requestMethod} ${entry.requestPath}`
+      );
       this.incrementMap(clientIps, entry.clientIp);
       this.incrementMap(methods, entry.requestMethod);
 
@@ -36,7 +45,11 @@ export class LogAnalyzerUseCase {
       }
 
       // Track errors (4xx and 5xx) - but not rejected requests
-      if ((entry.targetStatusCode.startsWith('4') || entry.targetStatusCode.startsWith('5')) && !entry.isRejected) {
+      if (
+        (entry.targetStatusCode.startsWith("4") ||
+          entry.targetStatusCode.startsWith("5")) &&
+        !entry.isRejected
+      ) {
         errors.push(entry);
       }
 
@@ -75,7 +88,9 @@ export class LogAnalyzerUseCase {
   }
 
   private calculateStats(numbers: number[]): Stats | null {
-    if (numbers.length === 0) {return null;}
+    if (numbers.length === 0) {
+      return null;
+    }
 
     const sorted = [...numbers].sort((a, b) => a - b);
     const sum = numbers.reduce((a, b) => a + b, 0);
@@ -84,8 +99,10 @@ export class LogAnalyzerUseCase {
 
     let stdDev = 0;
     if (numbers.length > 1) {
-      const squareDiffs = numbers.map(value => Math.pow(value - mean, 2));
-      stdDev = Math.sqrt(squareDiffs.reduce((a, b) => a + b, 0) / (numbers.length - 1));
+      const squareDiffs = numbers.map((value) => Math.pow(value - mean, 2));
+      stdDev = Math.sqrt(
+        squareDiffs.reduce((a, b) => a + b, 0) / (numbers.length - 1)
+      );
     }
 
     return {
@@ -93,23 +110,28 @@ export class LogAnalyzerUseCase {
       max: Math.max(...numbers),
       mean,
       median,
-      stdDev
+      stdDev,
     };
   }
 
   private analyzeByTimeInterval(entries: ALBLogEntry[]): TimeAnalysisBucket[] {
-    if (entries.length === 0) {return [];}
+    if (entries.length === 0) {
+      return [];
+    }
 
-    const byMinute = new Map<string, {
-      timestamp: string;
-      count: number;
-      responseTimes: number[];
-      errors: number;
-      timeouts: number;
-      statusCodes: Record<string, number>;
-    }>();
+    const byMinute = new Map<
+      string,
+      {
+        timestamp: string;
+        count: number;
+        responseTimes: number[];
+        errors: number;
+        timeouts: number;
+        statusCodes: Record<string, number>;
+      }
+    >();
 
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       if (!entry.timestampDate || isNaN(entry.timestampDate.getTime())) {
         return;
       }
@@ -125,7 +147,7 @@ export class LogAnalyzerUseCase {
           responseTimes: [],
           errors: 0,
           timeouts: 0,
-          statusCodes: {}
+          statusCodes: {},
         });
       }
 
@@ -139,7 +161,10 @@ export class LogAnalyzerUseCase {
         bucket.responseTimes.push(entry.totalTime);
       }
 
-      if (entry.targetStatusCode.startsWith('4') || entry.targetStatusCode.startsWith('5')) {
+      if (
+        entry.targetStatusCode.startsWith("4") ||
+        entry.targetStatusCode.startsWith("5")
+      ) {
         bucket.errors++;
       }
 
@@ -147,15 +172,18 @@ export class LogAnalyzerUseCase {
         bucket.timeouts++;
       }
 
-      bucket.statusCodes[entry.targetStatusCode] = (bucket.statusCodes[entry.targetStatusCode] || 0) + 1;
+      bucket.statusCodes[entry.targetStatusCode] =
+        (bucket.statusCodes[entry.targetStatusCode] || 0) + 1;
     });
 
-    const results = Array.from(byMinute.values()).map(bucket => {
+    const results = Array.from(byMinute.values()).map((bucket) => {
       let avgResponseTime = 0;
       let maxResponseTime = 0;
 
       if (bucket.responseTimes.length > 0) {
-        avgResponseTime = bucket.responseTimes.reduce((a, b) => a + b, 0) / bucket.responseTimes.length;
+        avgResponseTime =
+          bucket.responseTimes.reduce((a, b) => a + b, 0) /
+          bucket.responseTimes.length;
         maxResponseTime = Math.max(...bucket.responseTimes);
       }
 
@@ -166,7 +194,7 @@ export class LogAnalyzerUseCase {
         maxResponseTime,
         errors: bucket.errors,
         timeouts: bucket.timeouts,
-        statusCodes: bucket.statusCodes
+        statusCodes: bucket.statusCodes,
       };
     });
 

@@ -2,10 +2,10 @@
  * Infrastructure: File Log Reader
  */
 
-import * as fs from 'fs';
-import * as readline from 'readline';
-import * as zlib from 'zlib';
-import type { ILogReader } from './log-reader.interface';
+import * as fs from "fs";
+import * as readline from "readline";
+import * as zlib from "zlib";
+import type { ILogReader } from "./log-reader.interface";
 
 export class FileLogReader implements ILogReader {
   constructor(private readonly filePath: string) {}
@@ -15,13 +15,13 @@ export class FileLogReader implements ILogReader {
     let fileStream: NodeJS.ReadableStream = fs.createReadStream(this.filePath);
 
     // Check if file is gzipped
-    if (this.filePath.endsWith('.gz')) {
+    if (this.filePath.endsWith(".gz")) {
       fileStream = fileStream.pipe(zlib.createGunzip());
     }
 
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity
+      crlfDelay: Infinity,
     });
 
     for await (const line of rl) {

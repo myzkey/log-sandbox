@@ -1,11 +1,11 @@
-import { db } from '@alb-analyzer/db/client';
-import { albLogs } from '@alb-analyzer/db/schema';
-import { eq } from 'drizzle-orm';
-import Link from 'next/link';
-import { ArrowLeft, Clock, Server, User, Globe } from 'lucide-react';
-import { notFound } from 'next/navigation';
+import { db } from "@alb-analyzer/db/client";
+import { albLogs } from "@alb-analyzer/db/schema";
+import { eq } from "drizzle-orm";
+import { ArrowLeft, Clock, Globe, Server, User } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 async function getLog(id: string) {
   const logs = await db
@@ -65,8 +65,8 @@ export default async function LogDetailPage({
               <span
                 className={`px-3 py-1 text-sm font-semibold rounded-full ${
                   isError
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-green-100 text-green-800'
+                    ? "bg-red-100 text-red-800"
+                    : "bg-green-100 text-green-800"
                 }`}
               >
                 {log.elbStatusCode}
@@ -118,7 +118,9 @@ export default async function LogDetailPage({
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <dt className="text-sm font-medium text-gray-500">IP Address</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  IP Address
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900 font-mono">
                   {log.clientIp}
                 </dd>
@@ -128,9 +130,11 @@ export default async function LogDetailPage({
                 <dd className="mt-1 text-sm text-gray-900">{log.clientPort}</dd>
               </div>
               <div className="md:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">User Agent</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  User Agent
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900 break-all">
-                  {log.userAgent || '-'}
+                  {log.userAgent || "-"}
                 </dd>
               </div>
             </div>
@@ -160,11 +164,13 @@ export default async function LogDetailPage({
               <div>
                 <dt className="text-sm font-medium text-gray-500">Target IP</dt>
                 <dd className="mt-1 text-sm text-gray-900 font-mono">
-                  {log.targetIp || '-'}
+                  {log.targetIp || "-"}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">Target Port</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Target Port
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900">{log.targetPort}</dd>
               </div>
               <div className="md:col-span-2">
@@ -210,7 +216,9 @@ export default async function LogDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">Total Time</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Total Time
+                </dt>
                 <dd className="mt-1 text-sm font-semibold text-gray-900">
                   {log.totalTime.toFixed(3)}s
                 </dd>
@@ -231,7 +239,9 @@ export default async function LogDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">Sent Bytes</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Sent Bytes
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900">
                   {log.sentBytes.toLocaleString()} bytes
                 </dd>
@@ -242,17 +252,23 @@ export default async function LogDetailPage({
           {/* SSL/TLS Information */}
           {log.sslCipher && log.sslProtocol && (
             <section>
-              <h2 className="text-lg font-semibold mb-4">SSL/TLS Information</h2>
+              <h2 className="text-lg font-semibold mb-4">
+                SSL/TLS Information
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Protocol</dt>
+                  <dt className="text-sm font-medium text-gray-500">
+                    Protocol
+                  </dt>
                   <dd className="mt-1 text-sm text-gray-900">
                     {log.sslProtocol}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Cipher</dt>
-                  <dd className="mt-1 text-sm text-gray-900">{log.sslCipher}</dd>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {log.sslCipher}
+                  </dd>
                 </div>
               </div>
             </section>
@@ -260,7 +276,9 @@ export default async function LogDetailPage({
 
           {/* Additional Info */}
           <section>
-            <h2 className="text-lg font-semibold mb-4">Additional Information</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              Additional Information
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <dt className="text-sm font-medium text-gray-500">Timestamp</dt>
@@ -269,15 +287,17 @@ export default async function LogDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">Domain Name</dt>
+                <dt className="text-sm font-medium text-gray-500">
+                  Domain Name
+                </dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {log.domainName || '-'}
+                  {log.domainName || "-"}
                 </dd>
               </div>
               <div className="md:col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Trace ID</dt>
                 <dd className="mt-1 text-sm text-gray-900 font-mono break-all">
-                  {log.traceId || '-'}
+                  {log.traceId || "-"}
                 </dd>
               </div>
             </div>

@@ -275,6 +275,16 @@ pnpm download --from=2025/10/29
 # 別の設定ファイルを使用
 pnpm download --config=./config.prod.json
 pnpm download --from=2025/10/29 --to=2025/10/31 --config=./config.staging.json
+
+# 既存ファイルを削除して再ダウンロード（S3の最新データを取得）
+pnpm download --force
+pnpm download:force  # 省略形
+
+# 特定の日付を再取得
+pnpm download 2025/11/27 --force
+
+# 期間指定で再取得
+pnpm download --from=2025/11/25 --to=2025/11/27 --force
 ```
 
 ### 実行の流れ
@@ -317,6 +327,49 @@ logs/
 - すでにログファイルがダウンロード済みの場合は再ダウンロードをスキップ
 - すでに結合ログが存在する場合は再結合をスキップ
 - 効率的に再実行可能
+
+スキップを無視して最新データを取得したい場合は `--force` オプションを使用：
+
+```bash
+pnpm download --force
+```
+
+## データベース管理
+
+ダウンロードしたログはSQLiteデータベースにインポートして、ダッシュボードから閲覧できます。
+
+### コマンド一覧
+
+| コマンド | 説明 |
+|---------|------|
+| `pnpm db:import` | ログファイルをDBにインポート（差分のみ） |
+| `pnpm db:import --force` | インポート済みファイルも含めて再インポート |
+| `pnpm db:reset` | 全レコードを削除して再インポート |
+| `pnpm db:migrate` | マイグレーションを実行 |
+| `pnpm db:studio` | Drizzle Studioを起動（DB閲覧） |
+
+### 使い方
+
+```bash
+# ログファイルをDBにインポート（新規ファイルのみ）
+pnpm db:import
+
+# 全データを削除して再インポート
+pnpm db:reset
+
+# S3から再取得 + DB再インポート（一発）
+pnpm refresh
+```
+
+### refreshコマンド
+
+`pnpm refresh` は以下を順番に実行します：
+
+1. S3からログを強制再ダウンロード（`--force`）
+2. DBの全レコードを削除
+3. ログをDBに再インポート
+
+今日のログが更新されている場合など、最新データで更新したいときに便利です。
 
 ## ライセンス
 

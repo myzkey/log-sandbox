@@ -2,10 +2,10 @@
  * Infrastructure: Configuration Loader
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import * as fs from "fs";
+import * as path from "path";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -62,9 +62,9 @@ export class ConfigLoader {
     }
 
     throw new Error(
-      '設定ファイルが見つかりません。config.example.jsonをconfig.jsonにコピーして設定してください。\n' +
-      'または、以下の環境変数を設定してください:\n' +
-      '  AWS_PROFILE, S3_BUCKET, S3_PREFIX, AWS_ACCOUNT_ID, AWS_REGION'
+      "設定ファイルが見つかりません。config.example.jsonをconfig.jsonにコピーして設定してください。\n" +
+        "または、以下の環境変数を設定してください:\n" +
+        "  AWS_PROFILE, S3_BUCKET, S3_PREFIX, AWS_ACCOUNT_ID, AWS_REGION"
     );
   }
 
@@ -102,11 +102,11 @@ export class ConfigLoader {
    */
   private loadFromEnv(): AppConfig {
     return {
-      awsProfile: process.env.AWS_PROFILE ?? '',
-      s3Bucket: process.env.S3_BUCKET ?? '',
-      s3Prefix: process.env.S3_PREFIX ?? '',
-      awsAccountId: process.env.AWS_ACCOUNT_ID ?? '',
-      region: process.env.AWS_REGION ?? 'ap-northeast-1'
+      awsProfile: process.env.AWS_PROFILE ?? "",
+      s3Bucket: process.env.S3_BUCKET ?? "",
+      s3Prefix: process.env.S3_PREFIX ?? "",
+      awsAccountId: process.env.AWS_ACCOUNT_ID ?? "",
+      region: process.env.AWS_REGION ?? "ap-northeast-1",
     };
   }
 
@@ -115,7 +115,7 @@ export class ConfigLoader {
    */
   private loadFromFile(filePath: string): AppConfig {
     try {
-      const content = fs.readFileSync(filePath, 'utf-8');
+      const content = fs.readFileSync(filePath, "utf-8");
       const config = JSON.parse(content);
 
       // 必須フィールドの検証
@@ -123,7 +123,9 @@ export class ConfigLoader {
 
       return config;
     } catch (error) {
-      throw new Error(`設定ファイルの読み込みに失敗しました: ${(error as Error).message}`);
+      throw new Error(
+        `設定ファイルの読み込みに失敗しました: ${(error as Error).message}`
+      );
     }
   }
 
@@ -136,16 +138,18 @@ export class ConfigLoader {
 
     const possiblePaths = [
       // カレントディレクトリ
-      path.join(process.cwd(), 'config.json'),
-      path.join(process.cwd(), 'config.example.json'),
+      path.join(process.cwd(), "config.json"),
+      path.join(process.cwd(), "config.example.json"),
       // モノレポルート
-      ...(monorepoRoot ? [
-        path.join(monorepoRoot, 'config.json'),
-        path.join(monorepoRoot, 'config.example.json')
-      ] : []),
+      ...(monorepoRoot
+        ? [
+            path.join(monorepoRoot, "config.json"),
+            path.join(monorepoRoot, "config.example.json"),
+          ]
+        : []),
       // パッケージディレクトリからの相対パス
-      path.join(__dirname, '../../../config.json'),
-      path.join(__dirname, '../../../config.example.json')
+      path.join(__dirname, "../../../config.json"),
+      path.join(__dirname, "../../../config.example.json"),
     ];
 
     for (const filePath of possiblePaths) {
@@ -166,7 +170,7 @@ export class ConfigLoader {
     const root = path.parse(currentDir).root;
 
     while (currentDir !== root) {
-      const workspaceFile = path.join(currentDir, 'pnpm-workspace.yaml');
+      const workspaceFile = path.join(currentDir, "pnpm-workspace.yaml");
       if (fs.existsSync(workspaceFile)) {
         return currentDir;
       }
@@ -192,7 +196,13 @@ export class ConfigLoader {
    * 設定の検証
    */
   private validateConfig(config: AppConfig): void {
-    const requiredFields: (keyof AppConfig)[] = ['awsProfile', 's3Bucket', 's3Prefix', 'awsAccountId', 'region'];
+    const requiredFields: (keyof AppConfig)[] = [
+      "awsProfile",
+      "s3Bucket",
+      "s3Prefix",
+      "awsAccountId",
+      "region",
+    ];
 
     for (const field of requiredFields) {
       if (!config[field]) {
