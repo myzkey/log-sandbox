@@ -1,15 +1,15 @@
-import { db } from "@alb-analyzer/db/client";
-import { albLogs } from "@alb-analyzer/db/schema";
-import { eq, sql } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { db } from '@alb-analyzer/db/client'
+import { albLogs } from '@alb-analyzer/db/schema'
+import { eq, sql } from 'drizzle-orm'
+import { type NextRequest, NextResponse } from 'next/server'
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const profile = searchParams.get("profile");
+  const searchParams = request.nextUrl.searchParams
+  const profile = searchParams.get('profile')
 
-  const whereClause = profile ? eq(albLogs.awsProfile, profile) : undefined;
+  const whereClause = profile ? eq(albLogs.awsProfile, profile) : undefined
   const query = db
     .select({
       hour: sql<string>`strftime('%Y-%m-%d %H:00', ${albLogs.timestamp})`,
@@ -17,12 +17,12 @@ export async function GET(request: NextRequest) {
       avgResponseTime: sql<number>`avg(${albLogs.totalTime})`,
       errors: sql<number>`sum(case when cast(${albLogs.elbStatusCode} as integer) >= 400 then 1 else 0 end)`,
     })
-    .from(albLogs);
+    .from(albLogs)
 
   const result = await (whereClause ? query.where(whereClause) : query)
     .groupBy(sql`strftime('%Y-%m-%d %H:00', ${albLogs.timestamp})`)
     .orderBy(sql`strftime('%Y-%m-%d %H:00', ${albLogs.timestamp})`)
-    .limit(24);
+    .limit(24)
 
-  return NextResponse.json(result);
+  return NextResponse.json(result)
 }

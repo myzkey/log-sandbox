@@ -46,6 +46,7 @@ coverage/
 !package.json
 !tsconfig.json
 !config.example.json
+!biome.json
 
 # Config files (keep example, ignore actual config)
 config.json

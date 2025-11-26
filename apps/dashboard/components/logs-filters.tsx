@@ -1,13 +1,13 @@
-'use client';
+'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, X, Download, Check } from 'lucide-react';
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
-import { DateTimePicker } from './date-time-picker';
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
+import { Check, ChevronDown, Download, Search, X } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { DateTimePicker } from './date-time-picker'
 
 interface LogsFiltersProps {
-  profiles: string[];
+  profiles: string[]
 }
 
 const STATUS_OPTIONS = [
@@ -24,7 +24,7 @@ const STATUS_OPTIONS = [
   { value: '502', label: '502 Bad Gateway' },
   { value: '503', label: '503 Service Unavailable' },
   { value: '504', label: '504 Gateway Timeout' },
-];
+]
 
 const METHOD_OPTIONS = [
   { value: 'GET', label: 'GET' },
@@ -34,108 +34,110 @@ const METHOD_OPTIONS = [
   { value: 'PATCH', label: 'PATCH' },
   { value: 'OPTIONS', label: 'OPTIONS' },
   { value: 'HEAD', label: 'HEAD' },
-];
+]
 
 const RESPONSE_TIME_OPTIONS = [
   { value: '', label: 'All' },
   ...Array.from({ length: 30 }, (_, i) => {
-    const val = ((i + 1) * 0.1).toFixed(1);
-    return { value: val, label: `≥ ${val}s` };
+    const val = ((i + 1) * 0.1).toFixed(1)
+    return { value: val, label: `≥ ${val}s` }
   }),
-];
+]
 
 export function LogsFilters({ profiles }: LogsFiltersProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   // Local state for all filters
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [startDate, setStartDate] = useState(searchParams.get('startDate') || '');
-  const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
-  const [minResponseTime, setMinResponseTime] = useState(searchParams.get('minTime') || '');
-  const [profile, setProfile] = useState(searchParams.get('profile') || '');
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [startDate, setStartDate] = useState(searchParams.get('startDate') || '')
+  const [endDate, setEndDate] = useState(searchParams.get('endDate') || '')
+  const [minResponseTime, setMinResponseTime] = useState(searchParams.get('minTime') || '')
+  const [profile, setProfile] = useState(searchParams.get('profile') || '')
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(
-    searchParams.get('status')?.split(',').filter(Boolean) || []
-  );
+    searchParams.get('status')?.split(',').filter(Boolean) || [],
+  )
   const [selectedMethods, setSelectedMethods] = useState<string[]>(
-    searchParams.get('method')?.split(',').filter(Boolean) || []
-  );
+    searchParams.get('method')?.split(',').filter(Boolean) || [],
+  )
 
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const [methodDropdownOpen, setMethodDropdownOpen] = useState(false);
-  const statusDropdownRef = useRef<HTMLDivElement>(null);
-  const methodDropdownRef = useRef<HTMLDivElement>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false)
+  const [methodDropdownOpen, setMethodDropdownOpen] = useState(false)
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
+  const methodDropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
-        setStatusDropdownOpen(false);
+        setStatusDropdownOpen(false)
       }
       if (methodDropdownRef.current && !methodDropdownRef.current.contains(event.target as Node)) {
-        setMethodDropdownOpen(false);
+        setMethodDropdownOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleStatusToggle = (statusValue: string) => {
-    setSelectedStatuses(prev =>
-      prev.includes(statusValue)
-        ? prev.filter(s => s !== statusValue)
-        : [...prev, statusValue]
-    );
-  };
+    setSelectedStatuses((prev) =>
+      prev.includes(statusValue) ? prev.filter((s) => s !== statusValue) : [...prev, statusValue],
+    )
+  }
 
   const handleMethodToggle = (methodValue: string) => {
-    setSelectedMethods(prev =>
-      prev.includes(methodValue)
-        ? prev.filter(m => m !== methodValue)
-        : [...prev, methodValue]
-    );
-  };
+    setSelectedMethods((prev) =>
+      prev.includes(methodValue) ? prev.filter((m) => m !== methodValue) : [...prev, methodValue],
+    )
+  }
 
   const handleSearch = () => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams()
 
-    if (search) params.set('search', search);
-    if (startDate) params.set('startDate', startDate);
-    if (endDate) params.set('endDate', endDate);
-    if (minResponseTime) params.set('minTime', minResponseTime);
-    if (profile) params.set('profile', profile);
-    if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','));
-    if (selectedMethods.length > 0) params.set('method', selectedMethods.join(','));
+    if (search) params.set('search', search)
+    if (startDate) params.set('startDate', startDate)
+    if (endDate) params.set('endDate', endDate)
+    if (minResponseTime) params.set('minTime', minResponseTime)
+    if (profile) params.set('profile', profile)
+    if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','))
+    if (selectedMethods.length > 0) params.set('method', selectedMethods.join(','))
 
-    router.push(`/logs?${params.toString()}`);
-  };
+    router.push(`/logs?${params.toString()}`)
+  }
 
   const clearFilters = () => {
-    setSearch('');
-    setStartDate('');
-    setEndDate('');
-    setMinResponseTime('');
-    setProfile('');
-    setSelectedStatuses([]);
-    setSelectedMethods([]);
-    router.push('/logs');
-  };
+    setSearch('')
+    setStartDate('')
+    setEndDate('')
+    setMinResponseTime('')
+    setProfile('')
+    setSelectedStatuses([])
+    setSelectedMethods([])
+    router.push('/logs')
+  }
 
   // Build export URL from current local state
   const buildExportUrl = () => {
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (startDate) params.set('startDate', startDate);
-    if (endDate) params.set('endDate', endDate);
-    if (minResponseTime) params.set('minTime', minResponseTime);
-    if (profile) params.set('profile', profile);
-    if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','));
-    if (selectedMethods.length > 0) params.set('method', selectedMethods.join(','));
-    return `/api/logs/export?${params.toString()}`;
-  };
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (startDate) params.set('startDate', startDate)
+    if (endDate) params.set('endDate', endDate)
+    if (minResponseTime) params.set('minTime', minResponseTime)
+    if (profile) params.set('profile', profile)
+    if (selectedStatuses.length > 0) params.set('status', selectedStatuses.join(','))
+    if (selectedMethods.length > 0) params.set('method', selectedMethods.join(','))
+    return `/api/logs/export?${params.toString()}`
+  }
 
-  const hasFilters = search || startDate || endDate || minResponseTime || profile ||
-    selectedStatuses.length > 0 || selectedMethods.length > 0;
+  const hasFilters =
+    search ||
+    startDate ||
+    endDate ||
+    minResponseTime ||
+    profile ||
+    selectedStatuses.length > 0 ||
+    selectedMethods.length > 0
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -158,21 +160,15 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               End Date <span className="text-gray-400 font-normal">(JST)</span>
             </label>
-            <DateTimePicker
-              value={endDate}
-              onChange={setEndDate}
-              placeholder="Select end date"
-            />
+            <DateTimePicker value={endDate} onChange={setEndDate} placeholder="Select end date" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Response Time
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Response Time</label>
             <Listbox value={minResponseTime} onChange={setMinResponseTime}>
               <div className="relative">
                 <ListboxButton className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                   <span className={minResponseTime ? 'text-gray-900' : 'text-gray-500'}>
-                    {RESPONSE_TIME_OPTIONS.find(o => o.value === minResponseTime)?.label || 'All'}
+                    {RESPONSE_TIME_OPTIONS.find((o) => o.value === minResponseTime)?.label || 'All'}
                   </span>
                   <ChevronDown className="h-4 w-4 text-gray-400" />
                 </ListboxButton>
@@ -185,7 +181,9 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
                     >
                       {({ selected }) => (
                         <>
-                          <span className={selected ? 'font-medium text-indigo-600' : 'text-gray-700'}>
+                          <span
+                            className={selected ? 'font-medium text-indigo-600' : 'text-gray-700'}
+                          >
                             {option.label}
                           </span>
                           {selected && <Check className="h-4 w-4 text-indigo-600" />}
@@ -203,9 +201,7 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* AWS Profile Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              AWS Profile
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">AWS Profile</label>
             <select
               value={profile}
               onChange={(e) => setProfile(e.target.value)}
@@ -222,9 +218,7 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
 
           {/* Search */}
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
             <div className="relative">
               <input
                 type="text"
@@ -239,18 +233,14 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
 
           {/* Status Code Filter (Multi-select) */}
           <div className="relative" ref={statusDropdownRef}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status Code
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Status Code</label>
             <button
               type="button"
               onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-left flex items-center justify-between"
             >
               <span className={selectedStatuses.length === 0 ? 'text-gray-500' : 'text-gray-900'}>
-                {selectedStatuses.length === 0
-                  ? 'All'
-                  : `${selectedStatuses.length} selected`}
+                {selectedStatuses.length === 0 ? 'All' : `${selectedStatuses.length} selected`}
               </span>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
@@ -287,18 +277,14 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
 
           {/* Method Filter (Multi-select) */}
           <div className="relative" ref={methodDropdownRef}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              HTTP Method
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">HTTP Method</label>
             <button
               type="button"
               onClick={() => setMethodDropdownOpen(!methodDropdownOpen)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-left flex items-center justify-between"
             >
               <span className={selectedMethods.length === 0 ? 'text-gray-500' : 'text-gray-900'}>
-                {selectedMethods.length === 0
-                  ? 'All'
-                  : `${selectedMethods.length} selected`}
+                {selectedMethods.length === 0 ? 'All' : `${selectedMethods.length} selected`}
               </span>
               <ChevronDown className="h-4 w-4 text-gray-400" />
             </button>
@@ -338,6 +324,7 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
       <div className="mt-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={handleSearch}
             className="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
           >
@@ -346,6 +333,7 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
           </button>
           {hasFilters && (
             <button
+              type="button"
               onClick={clearFilters}
               className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
             >
@@ -363,5 +351,5 @@ export function LogsFilters({ profiles }: LogsFiltersProps) {
         </a>
       </div>
     </div>
-  );
+  )
 }

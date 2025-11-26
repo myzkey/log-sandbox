@@ -2,84 +2,84 @@
  * Infrastructure Layer: Log Combiner Tests
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { LogCombiner } from "./";
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { LogCombiner } from './'
 
 // fs モジュールをモック
-vi.mock("fs");
+vi.mock('fs')
 
-describe("LogCombiner", () => {
-  let combiner: LogCombiner;
+describe('LogCombiner', () => {
+  let combiner: LogCombiner
 
   beforeEach(() => {
-    combiner = new LogCombiner();
-    vi.clearAllMocks();
-  });
+    combiner = new LogCombiner()
+    vi.clearAllMocks()
+  })
 
-  describe("getGzipFiles", () => {
-    it("指定ディレクトリの.gzファイルを取得すること", () => {
-      const mockFiles = ["file1.gz", "file2.gz", "file3.txt", "file4.log"];
+  describe('getGzipFiles', () => {
+    it('指定ディレクトリの.gzファイルを取得すること', () => {
+      const mockFiles = ['file1.gz', 'file2.gz', 'file3.txt', 'file4.log']
 
       vi.mocked(fs.readdirSync).mockReturnValue(
-        mockFiles as unknown as ReturnType<typeof fs.readdirSync>
-      );
+        mockFiles as unknown as ReturnType<typeof fs.readdirSync>,
+      )
       vi.mocked(fs.statSync).mockReturnValue({
         isFile: () => true,
-      } as fs.Stats);
+      } as fs.Stats)
 
-      const result = combiner.getGzipFiles("/test/dir");
+      const result = combiner.getGzipFiles('/test/dir')
 
       expect(result).toEqual([
-        path.join("/test/dir", "file1.gz"),
-        path.join("/test/dir", "file2.gz"),
-      ]);
-    });
+        path.join('/test/dir', 'file1.gz'),
+        path.join('/test/dir', 'file2.gz'),
+      ])
+    })
 
-    it("ディレクトリを除外すること", () => {
-      const mockFiles = ["file1.gz", "subdir"];
+    it('ディレクトリを除外すること', () => {
+      const mockFiles = ['file1.gz', 'subdir']
 
       vi.mocked(fs.readdirSync).mockReturnValue(
-        mockFiles as unknown as ReturnType<typeof fs.readdirSync>
-      );
+        mockFiles as unknown as ReturnType<typeof fs.readdirSync>,
+      )
       vi.mocked(fs.statSync).mockImplementation((filePath) => {
-        if (filePath.toString().endsWith("subdir")) {
-          return { isFile: () => false } as fs.Stats;
+        if (filePath.toString().endsWith('subdir')) {
+          return { isFile: () => false } as fs.Stats
         }
-        return { isFile: () => true } as fs.Stats;
-      });
+        return { isFile: () => true } as fs.Stats
+      })
 
-      const result = combiner.getGzipFiles("/test/dir");
+      const result = combiner.getGzipFiles('/test/dir')
 
-      expect(result).toEqual([path.join("/test/dir", "file1.gz")]);
-    });
+      expect(result).toEqual([path.join('/test/dir', 'file1.gz')])
+    })
 
-    it("空のディレクトリを処理できること", () => {
-      vi.mocked(fs.readdirSync).mockReturnValue([]);
+    it('空のディレクトリを処理できること', () => {
+      vi.mocked(fs.readdirSync).mockReturnValue([])
 
-      const result = combiner.getGzipFiles("/test/dir");
+      const result = combiner.getGzipFiles('/test/dir')
 
-      expect(result).toEqual([]);
-    });
-  });
+      expect(result).toEqual([])
+    })
+  })
 
-  describe("isAlreadyCombined", () => {
-    it("ファイルが存在する場合trueを返すこと", () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
+  describe('isAlreadyCombined', () => {
+    it('ファイルが存在する場合trueを返すこと', () => {
+      vi.mocked(fs.existsSync).mockReturnValue(true)
 
-      const result = combiner.isAlreadyCombined("/test/combined.log");
+      const result = combiner.isAlreadyCombined('/test/combined.log')
 
-      expect(result).toBe(true);
-      expect(fs.existsSync).toHaveBeenCalledWith("/test/combined.log");
-    });
+      expect(result).toBe(true)
+      expect(fs.existsSync).toHaveBeenCalledWith('/test/combined.log')
+    })
 
-    it("ファイルが存在しない場合falseを返すこと", () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
+    it('ファイルが存在しない場合falseを返すこと', () => {
+      vi.mocked(fs.existsSync).mockReturnValue(false)
 
-      const result = combiner.isAlreadyCombined("/test/combined.log");
+      const result = combiner.isAlreadyCombined('/test/combined.log')
 
-      expect(result).toBe(false);
-    });
-  });
-});
+      expect(result).toBe(false)
+    })
+  })
+})

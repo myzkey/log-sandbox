@@ -1,27 +1,25 @@
-'use client';
+'use client'
 
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 interface StatusCodeData {
-  statusCode: string;
-  count: number;
+  statusCode: string
+  count: number
 }
 
 export function StatusCodeChart({ data }: { data: StatusCodeData[] }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4 text-gray-900">
-        Status Code Distribution
-      </h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-900">Status Code Distribution</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -33,5 +31,5 @@ export function StatusCodeChart({ data }: { data: StatusCodeData[] }) {
         </BarChart>
       </ResponsiveContainer>
     </div>
-  );
+  )
 }

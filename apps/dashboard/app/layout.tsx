@@ -1,28 +1,28 @@
-import { ProfileSelector } from "@/components/profile-selector";
-import { QueryProvider } from "@/components/query-provider";
-import { Sidebar } from "@/components/sidebar";
-import { db } from "@alb-analyzer/db/client";
-import { awsProfiles } from "@alb-analyzer/db/schema";
-import type { Metadata } from "next";
-import "./globals.css";
+import { db } from '@alb-analyzer/db/client'
+import { awsProfiles } from '@alb-analyzer/db/schema'
+import type { Metadata } from 'next'
+import { ProfileSelector } from '@/components/profile-selector'
+import { QueryProvider } from '@/components/query-provider'
+import { Sidebar } from '@/components/sidebar'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: "ALB Log Analyzer Dashboard",
-  description: "Analyze and visualize AWS ALB logs",
-};
+  title: 'ALB Log Analyzer Dashboard',
+  description: 'Analyze and visualize AWS ALB logs',
+}
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic'
 
 async function getProfiles() {
-  return await db.select().from(awsProfiles).orderBy(awsProfiles.name);
+  return await db.select().from(awsProfiles).orderBy(awsProfiles.name)
 }
 
 export default async function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-  const profiles = await getProfiles();
+  const profiles = await getProfiles()
 
   return (
     <html lang="en">
@@ -31,9 +31,7 @@ export default async function RootLayout({
           <div className="flex h-screen overflow-hidden">
             <div className="flex h-screen w-64 flex-col bg-gray-900">
               <div className="flex h-16 items-center px-6">
-                <h1 className="text-xl font-bold text-white">
-                  ALB Log Analyzer
-                </h1>
+                <h1 className="text-xl font-bold text-white">ALB Log Analyzer</h1>
               </div>
               <ProfileSelector profiles={profiles} />
               <Sidebar />
@@ -43,5 +41,5 @@ export default async function RootLayout({
         </QueryProvider>
       </body>
     </html>
-  );
+  )
 }

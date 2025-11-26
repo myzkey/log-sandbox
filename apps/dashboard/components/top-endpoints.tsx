@@ -1,15 +1,13 @@
 interface EndpointData {
-  path: string;
-  count: number;
-  avgResponseTime: number;
+  path: string
+  count: number
+  avgResponseTime: number
 }
 
 export function TopEndpoints({ data }: { data: EndpointData[] }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-semibold mb-4 text-gray-900">
-        Top Endpoints
-      </h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-900">Top Endpoints</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-50">
@@ -43,5 +41,5 @@ export function TopEndpoints({ data }: { data: EndpointData[] }) {
         </table>
       </div>
     </div>
-  );
+  )
 }

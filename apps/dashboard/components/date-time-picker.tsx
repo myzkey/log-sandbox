@@ -1,82 +1,84 @@
-'use client';
+'use client'
 
-import { useState, useRef, useEffect } from 'react';
-import { DayPicker } from 'react-day-picker';
-import { format, parse } from 'date-fns';
-import { ja } from 'date-fns/locale';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, parse } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { DayPicker } from 'react-day-picker'
 
 interface DateTimePickerProps {
-  value: string; // ISO format: "2025-01-01T12:00"
-  onChange: (value: string) => void;
-  placeholder?: string;
+  value: string // ISO format: "2025-01-01T12:00"
+  onChange: (value: string) => void
+  placeholder?: string
 }
 
-export function DateTimePicker({ value, onChange, placeholder = 'Select date & time' }: DateTimePickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function DateTimePicker({
+  value,
+  onChange,
+  placeholder = 'Select date & time',
+}: DateTimePickerProps) {
+  const [isOpen, setIsOpen] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
     if (value) {
-      return parse(value, "yyyy-MM-dd'T'HH:mm", new Date());
+      return parse(value, "yyyy-MM-dd'T'HH:mm", new Date())
     }
-    return undefined;
-  });
+    return undefined
+  })
   const [time, setTime] = useState(() => {
     if (value) {
-      return value.split('T')[1] || '00:00';
+      return value.split('T')[1] || '00:00'
     }
-    return '00:00';
-  });
+    return '00:00'
+  })
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Sync from prop
   useEffect(() => {
     if (value) {
-      const parsed = parse(value, "yyyy-MM-dd'T'HH:mm", new Date());
-      setSelectedDate(parsed);
-      setTime(value.split('T')[1] || '00:00');
+      const parsed = parse(value, "yyyy-MM-dd'T'HH:mm", new Date())
+      setSelectedDate(parsed)
+      setTime(value.split('T')[1] || '00:00')
     } else {
-      setSelectedDate(undefined);
-      setTime('00:00');
+      setSelectedDate(undefined)
+      setTime('00:00')
     }
-  }, [value]);
+  }, [value])
 
   const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
+    setSelectedDate(date)
     if (date) {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      onChange(`${dateStr}T${time}`);
+      const dateStr = format(date, 'yyyy-MM-dd')
+      onChange(`${dateStr}T${time}`)
     }
-  };
+  }
 
   const handleTimeChange = (newTime: string) => {
-    setTime(newTime);
+    setTime(newTime)
     if (selectedDate) {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      onChange(`${dateStr}T${newTime}`);
+      const dateStr = format(selectedDate, 'yyyy-MM-dd')
+      onChange(`${dateStr}T${newTime}`)
     }
-  };
+  }
 
-  const displayValue = selectedDate
-    ? `${format(selectedDate, 'yyyy/MM/dd')} ${time}`
-    : '';
+  const displayValue = selectedDate ? `${format(selectedDate, 'yyyy/MM/dd')} ${time}` : ''
 
   const handleClear = () => {
-    setSelectedDate(undefined);
-    setTime('00:00');
-    onChange('');
-    setIsOpen(false);
-  };
+    setSelectedDate(undefined)
+    setTime('00:00')
+    onChange('')
+    setIsOpen(false)
+  }
 
   return (
     <div className="relative" ref={containerRef}>
@@ -105,14 +107,17 @@ export function DateTimePicker({ value, onChange, placeholder = 'Select date & t
               month_caption: 'flex justify-center pt-1 relative items-center mb-4',
               caption_label: 'text-sm font-medium text-gray-900',
               nav: 'space-x-1 flex items-center',
-              button_previous: 'absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100',
-              button_next: 'absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100',
+              button_previous:
+                'absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100',
+              button_next:
+                'absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100',
               month_grid: 'w-full border-collapse',
               weekdays: 'flex w-full',
               weekday: 'text-gray-500 rounded-md w-9 font-normal text-[0.8rem] text-center',
               week: 'flex w-full mt-1',
               day: 'h-9 w-9 text-center text-sm p-0 relative inline-flex items-center justify-center',
-              day_button: 'h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 inline-flex items-center justify-center',
+              day_button:
+                'h-9 w-9 p-0 font-normal rounded-md hover:bg-gray-100 inline-flex items-center justify-center',
               selected: 'bg-indigo-600 text-white hover:bg-indigo-700 rounded-md',
               today: 'bg-gray-100 text-gray-900 rounded-md',
               outside: 'text-gray-400 opacity-50',
@@ -120,12 +125,18 @@ export function DateTimePicker({ value, onChange, placeholder = 'Select date & t
             }}
             components={{
               PreviousMonthButton: (props) => (
-                <button {...props} className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100 absolute left-1">
+                <button
+                  {...props}
+                  className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100 absolute left-1"
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
               ),
               NextMonthButton: (props) => (
-                <button {...props} className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100 absolute right-1">
+                <button
+                  {...props}
+                  className="h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center rounded-md hover:bg-gray-100 absolute right-1"
+                >
                   <ChevronRight className="h-4 w-4" />
                 </button>
               ),
@@ -133,9 +144,7 @@ export function DateTimePicker({ value, onChange, placeholder = 'Select date & t
           />
 
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Time
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
             <input
               type="time"
               value={time}
@@ -163,5 +172,5 @@ export function DateTimePicker({ value, onChange, placeholder = 'Select date & t
         </div>
       )}
     </div>
-  );
+  )
 }
