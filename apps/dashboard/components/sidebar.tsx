@@ -1,12 +1,13 @@
 'use client'
 
-import { BarChart3, Filter, Home, List, TrendingDown } from 'lucide-react'
+import { Activity, BarChart3, Filter, Home, List, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'All Logs', href: '/logs', icon: List },
+  { name: 'Traffic', href: '/traffic', icon: Activity },
   { name: 'Slow Endpoints', href: '/slow-endpoints', icon: TrendingDown },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Filters', href: '/filters', icon: Filter },
