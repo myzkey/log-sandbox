@@ -1,7 +1,10 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { Loader2 } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { SlowEndpointsChart } from '@/components/slow-endpoints-chart'
 import { SlowEndpointsTable } from '@/components/slow-endpoints-table'
 
@@ -27,10 +30,21 @@ interface SlowRequest {
   isTimeout: number
 }
 
-function buildApiUrl(endpoint: string, profile?: string | null) {
+interface SlowRequestsResponse {
+  items: SlowRequest[]
+  pagination: {
+    hasMore: boolean
+    nextCursor: string | null
+  }
+}
+
+function buildApiUrl(endpoint: string, profile?: string | null, cursor?: string | null) {
   const url = new URL(endpoint, window.location.origin)
   if (profile) {
     url.searchParams.set('profile', profile)
+  }
+  if (cursor) {
+    url.searchParams.set('cursor', cursor)
   }
   return url.toString()
 }
@@ -59,6 +73,143 @@ function LoadingSkeleton() {
   )
 }
 
+const ROW_HEIGHT = 53
+
+function SlowRequestsVirtualTable({
+  requests,
+  hasMore,
+  isFetchingNextPage,
+  fetchNextPage,
+}: {
+  requests: SlowRequest[]
+  hasMore: boolean
+  isFetchingNextPage: boolean
+  fetchNextPage: () => void
+}) {
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: requests.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 10,
+  })
+
+  const handleScroll = useCallback(() => {
+    if (!parentRef.current || !hasMore || isFetchingNextPage) return
+
+    const { scrollTop, scrollHeight, clientHeight } = parentRef.current
+    if (scrollHeight - scrollTop - clientHeight < 500) {
+      fetchNextPage()
+    }
+  }, [hasMore, isFetchingNextPage, fetchNextPage])
+
+  useEffect(() => {
+    const el = parentRef.current
+    if (!el) return
+
+    el.addEventListener('scroll', handleScroll)
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
+
+  const virtualRows = rowVirtualizer.getVirtualItems()
+
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h2 className="text-xl font-semibold text-gray-900">
+          Slowest Individual Requests ({requests.length.toLocaleString()}
+          {hasMore ? '+' : ''})
+        </h2>
+      </div>
+
+      {/* Header */}
+      <div className="grid grid-cols-[180px_80px_1fr_100px_120px_140px] bg-gray-50 border-b border-gray-200">
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+          Timestamp
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+          Method
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Path</div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+          Status
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+          Response Time
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+          Client IP
+        </div>
+      </div>
+
+      {/* Virtualized body */}
+      <div ref={parentRef} className="h-[500px] overflow-auto">
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {virtualRows.map((virtualRow) => {
+            const req = requests[virtualRow.index]
+            return (
+              <div
+                key={req.id}
+                className="grid grid-cols-[180px_80px_1fr_100px_120px_140px] border-b border-gray-200 hover:bg-gray-50 absolute w-full"
+                style={{
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {new Date(req.timestamp).toLocaleString()}
+                </div>
+                <div className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                    {req.method}
+                  </span>
+                </div>
+                <div className="px-6 py-4 text-sm text-gray-900 font-mono truncate">{req.path}</div>
+                <div className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      parseInt(req.statusCode, 10) >= 400
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-green-100 text-green-800'
+                    }`}
+                  >
+                    {req.statusCode}
+                  </span>
+                  {req.isTimeout === 1 && (
+                    <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
+                      Timeout
+                    </span>
+                  )}
+                </div>
+                <div className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
+                  {req.totalTime.toFixed(3)}s
+                </div>
+                <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                  {req.clientIp}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {isFetchingNextPage && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <span className="ml-2 text-sm text-gray-500">Loading more...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function SlowEndpointsPage() {
   const searchParams = useSearchParams()
   const profile = searchParams.get('profile')
@@ -68,10 +219,27 @@ export default function SlowEndpointsPage() {
     queryFn: () => fetchApi<SlowEndpoint[]>(buildApiUrl('/api/slow-endpoints', profile)),
   })
 
-  const { data: slowRequests, isLoading: requestsLoading } = useQuery<SlowRequest[]>({
+  const {
+    data: slowRequestsData,
+    isLoading: requestsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery<SlowRequestsResponse>({
     queryKey: ['slow-requests', profile],
-    queryFn: () => fetchApi<SlowRequest[]>(buildApiUrl('/api/slow-requests', profile)),
+    queryFn: ({ pageParam }) =>
+      fetchApi<SlowRequestsResponse>(
+        buildApiUrl('/api/slow-requests', profile, pageParam as string | null),
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore ? lastPage.pagination.nextCursor : undefined,
   })
+
+  const allSlowRequests = useMemo(() => {
+    if (!slowRequestsData?.pages) return []
+    return slowRequestsData.pages.flatMap((page) => page.items)
+  }, [slowRequestsData?.pages])
 
   if (endpointsLoading || requestsLoading) {
     return <LoadingSkeleton />
@@ -103,10 +271,10 @@ export default function SlowEndpointsPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-sm font-medium text-gray-500">Slowest Request</h3>
           <p className="text-2xl font-bold text-gray-900 mt-2">
-            {slowRequests?.[0]?.totalTime.toFixed(3) || '0.000'}s
+            {allSlowRequests[0]?.totalTime.toFixed(3) || '0.000'}s
           </p>
           <p className="text-sm text-gray-600 mt-1">
-            {slowRequests?.[0] ? new Date(slowRequests[0].timestamp).toLocaleString() : 'N/A'}
+            {allSlowRequests[0] ? new Date(allSlowRequests[0].timestamp).toLocaleString() : 'N/A'}
           </p>
         </div>
       </div>
@@ -125,78 +293,14 @@ export default function SlowEndpointsPage() {
         </div>
       )}
 
-      {/* Slowest Individual Requests */}
-      {slowRequests && slowRequests.length > 0 && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Slowest Individual Requests</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Timestamp
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Method
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Path
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Response Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Client IP
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {slowRequests.map((req) => (
-                  <tr key={req.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(req.timestamp).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                        {req.method}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 font-mono max-w-md truncate">
-                      {req.path}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          parseInt(req.statusCode, 10) >= 400
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {req.statusCode}
-                      </span>
-                      {req.isTimeout === 1 && (
-                        <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">
-                          Timeout
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">
-                      {req.totalTime.toFixed(3)}s
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                      {req.clientIp}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      {/* Slowest Individual Requests with virtualization */}
+      {allSlowRequests.length > 0 && (
+        <SlowRequestsVirtualTable
+          requests={allSlowRequests}
+          hasMore={hasNextPage ?? false}
+          isFetchingNextPage={isFetchingNextPage}
+          fetchNextPage={fetchNextPage}
+        />
       )}
     </div>
   )

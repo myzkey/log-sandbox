@@ -1,3 +1,5 @@
+'use client'
+
 import type { ALBLog } from '@alb-analyzer/db/schema'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import Link from 'next/link'
@@ -18,7 +20,12 @@ function getStatusColor(status: string) {
   return 'text-gray-600 bg-gray-50'
 }
 
-export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
+export function LogsTable({
+  logs,
+  sortBy,
+  sortOrder,
+  onSort,
+}: LogsTableProps) {
   const SortIcon = ({ column }: { column: string }) => {
     if (sortBy !== column) {
       return <ArrowUpDown className="h-4 w-4" />
@@ -27,80 +34,79 @@ export function LogsTable({ logs, sortBy, sortOrder, onSort }: LogsTableProps) {
   }
 
   const SortableHeader = ({ column, children }: { column: string; children: React.ReactNode }) => (
-    <th
-      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+    <button
+      type="button"
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors flex items-center gap-2 w-full"
       onClick={() => onSort?.(column)}
     >
-      <div className="flex items-center gap-2">
-        {children}
-        <SortIcon column={column} />
-      </div>
-    </th>
+      {children}
+      <SortIcon column={column} />
+    </button>
   )
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <SortableHeader column="timestamp">Timestamp</SortableHeader>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Method
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Path
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Client IP
-              </th>
-              <SortableHeader column="totalTime">Response Time</SortableHeader>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {logs.map((log) => (
-              <tr key={log.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {new Date(log.timestamp).toLocaleString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                    {log.requestMethod}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900 font-mono max-w-md truncate">
-                  {log.requestPath}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                      log.elbStatusCode,
-                    )}`}
-                  >
-                    {log.elbStatusCode}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                  {log.clientIp}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {log.totalTime.toFixed(3)}s
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link href={`/logs/${log.id}`} className="text-indigo-600 hover:text-indigo-900">
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Header */}
+      <div className="grid grid-cols-[180px_80px_1fr_80px_140px_100px_70px] bg-gray-50 border-b border-gray-200">
+        <SortableHeader column="timestamp">Timestamp</SortableHeader>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          Method
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          Path
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          Status
+        </div>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          Client IP
+        </div>
+        <SortableHeader column="totalTime">Time</SortableHeader>
+        <div className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+          Actions
+        </div>
+      </div>
+
+      {/* Table body */}
+      <div>
+        {logs.map((log) => (
+          <div
+            key={log.id}
+            className="grid grid-cols-[180px_80px_1fr_80px_140px_100px_70px] border-b border-gray-200 hover:bg-gray-50"
+          >
+            <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {new Date(log.timestamp).toLocaleString()}
+            </div>
+            <div className="px-6 py-4 whitespace-nowrap">
+              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                {log.requestMethod}
+              </span>
+            </div>
+            <div className="px-6 py-4 text-sm text-gray-900 font-mono truncate">
+              {log.requestPath}
+            </div>
+            <div className="px-6 py-4 whitespace-nowrap">
+              <span
+                className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                  log.elbStatusCode,
+                )}`}
+              >
+                {log.elbStatusCode}
+              </span>
+            </div>
+            <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+              {log.clientIp}
+            </div>
+            <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              {log.totalTime.toFixed(3)}s
+            </div>
+            <div className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <Link href={`/logs/${log.id}`} className="text-indigo-600 hover:text-indigo-900">
+                View
+              </Link>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
