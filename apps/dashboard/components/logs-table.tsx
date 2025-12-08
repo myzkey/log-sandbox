@@ -72,7 +72,9 @@ export function LogsTable({
         {logs.map((log) => (
           <div
             key={log.id}
-            className="grid grid-cols-[180px_80px_1fr_80px_140px_100px_70px] border-b border-gray-200 hover:bg-gray-50"
+            className={`grid grid-cols-[180px_80px_1fr_80px_140px_100px_70px] border-b border-gray-200 ${
+              log.totalTime >= 1 ? 'bg-red-100 hover:bg-red-200' : 'hover:bg-gray-50'
+            }`}
           >
             <div className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
               {new Date(log.timestamp).toLocaleString()}

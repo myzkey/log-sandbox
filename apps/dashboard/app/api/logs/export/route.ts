@@ -102,11 +102,25 @@ export async function GET(request: NextRequest) {
     return str
   }
 
+  // Convert UTC timestamp to JST (UTC+9) in YYYY/MM/DD HH:mm:ss format
+  const toJST = (utcTimestamp: string): string => {
+    const date = new Date(utcTimestamp)
+    const jstOffset = 9 * 60 * 60 * 1000
+    const jstDate = new Date(date.getTime() + jstOffset)
+    const y = jstDate.getUTCFullYear()
+    const m = String(jstDate.getUTCMonth() + 1).padStart(2, '0')
+    const d = String(jstDate.getUTCDate()).padStart(2, '0')
+    const h = String(jstDate.getUTCHours()).padStart(2, '0')
+    const min = String(jstDate.getUTCMinutes()).padStart(2, '0')
+    const s = String(jstDate.getUTCSeconds()).padStart(2, '0')
+    return `${y}/${m}/${d} ${h}:${min}:${s}`
+  }
+
   const csvRows = [
     headers.join(','),
     ...logs.map((log) =>
       [
-        escapeCSV(log.timestamp),
+        escapeCSV(toJST(log.timestamp)),
         escapeCSV(log.requestMethod),
         escapeCSV(log.requestPath),
         escapeCSV(log.elbStatusCode),
